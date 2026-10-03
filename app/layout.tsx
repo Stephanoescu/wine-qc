@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { Sidebar } from "@/components/layout/Navigation";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,8 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "VinControl — Control de Calidad de Trasiego",
-  description: "Sistema de control estadístico de calidad para trasiego de vinos entre tanques",
+  title: "Bodega Control — Sistema de Calidad Vitivinícola",
+  description:
+    "Sistema de control estadístico de calidad para recepción, clasificación y segregación de uva en bodega",
 };
 
 export default function RootLayout({
@@ -24,16 +24,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="es" className="dark">
+    <html lang="es">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-zinc-950 text-zinc-100 min-h-screen`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-950 text-stone-100 min-h-screen`}
       >
-        <div className="flex min-h-screen">
-          <Sidebar />
-          <main className="flex-1 flex flex-col min-w-0">
-            {children}
-          </main>
-        </div>
+        {children}
       </body>
     </html>
   );
