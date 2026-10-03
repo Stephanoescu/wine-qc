@@ -6,6 +6,7 @@ import { ArrowLeft, Wine } from "lucide-react";
 import { WizardProgress } from "@/components/recepcion/WizardUI";
 import { Paso1Identificacion } from "@/components/recepcion/Paso1Identificacion";
 import { Paso2InspeccionVisual } from "@/components/recepcion/Paso2InspeccionVisual";
+import { PasoMuestra } from "@/components/recepcion/PasoMuestra";
 import { Paso3Fisicoquimica } from "@/components/recepcion/Paso3Fisicoquimica";
 import { Paso4DecisionFinal } from "@/components/recepcion/Paso4DecisionFinal";
 import type {
@@ -15,7 +16,10 @@ import type {
   LoteGuardado,
 } from "@/lib/recepcion-data";
 
-const STEPS = ["Identificación", "Inspección Visual", "Fisicoquímica", "Decisión"];
+// ─────────────────────────────────────────
+// 5-step wizard
+// ─────────────────────────────────────────
+const STEPS = ["Identificación", "Inspección Visual", "Muestra", "Fisicoquímica", "Decisión"];
 
 function makeCodigoLote() {
   const year = new Date().getFullYear();
@@ -55,7 +59,8 @@ export default function RecepcionPage() {
   const [visual, setVisual] = useState<InspeccionVisualData>(EMPTY_VISUAL);
   const [fisico, setFisico] = useState<FisicoquimicaData>(EMPTY_FISICO);
 
-  // ── Save via API ──────────────────────────────
+  const pesoNeto = parseFloat(identificacion.peso) || 0;
+
   async function handleSave(lote: LoteGuardado): Promise<{ ok: boolean; error?: string }> {
     try {
       const res = await fetch("/api/lotes", {
@@ -63,14 +68,9 @@ export default function RecepcionPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lote),
       });
-
       const json = await res.json();
+      if (!res.ok) return { ok: false, error: json.error ?? "Error al guardar" };
 
-      if (!res.ok) {
-        return { ok: false, error: json.error ?? "Error al guardar" };
-      }
-
-      // Reset wizard for next lot after a short delay
       setTimeout(() => {
         setStep(1);
         setIdentificacion({ ...EMPTY_ID, codigoLote: makeCodigoLote() });
@@ -90,7 +90,7 @@ export default function RecepcionPage() {
       <header className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/90 backdrop-blur-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <Link
-            href="/"
+            href="/inicio"
             className="flex items-center gap-1.5 text-stone-500 hover:text-stone-300 transition-colors text-sm"
           >
             <ArrowLeft className="w-4 h-4" />
@@ -106,8 +106,6 @@ export default function RecepcionPage() {
             Paso {step}/{STEPS.length}
           </span>
         </div>
-
-        {/* Stepper */}
         <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-4">
           <WizardProgress steps={STEPS} currentStep={step} />
         </div>
@@ -125,25 +123,33 @@ export default function RecepcionPage() {
         {step === 2 && (
           <Paso2InspeccionVisual
             data={visual}
+            pesoNeto={pesoNeto}
             onChange={setVisual}
             onNext={() => setStep(3)}
             onPrev={() => setStep(1)}
           />
         )}
         {step === 3 && (
-          <Paso3Fisicoquimica
-            data={fisico}
-            onChange={setFisico}
+          <PasoMuestra
             onNext={() => setStep(4)}
             onPrev={() => setStep(2)}
           />
         )}
         {step === 4 && (
+          <Paso3Fisicoquimica
+            data={fisico}
+            onChange={setFisico}
+            onNext={() => setStep(5)}
+            onPrev={() => setStep(3)}
+          />
+        )}
+        {step === 5 && (
           <Paso4DecisionFinal
             identificacion={identificacion}
             visual={visual}
             fisico={fisico}
-            onPrev={() => setStep(3)}
+            pesoNeto={pesoNeto}
+            onPrev={() => setStep(4)}
             onSave={handleSave}
           />
         )}

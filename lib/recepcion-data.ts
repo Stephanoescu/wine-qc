@@ -93,76 +93,99 @@ export const VARIEDADES_UVA = [
 // ─────────────────────────────────────────
 export function evaluarCategoria(
   visual: InspeccionVisualData,
-  fisico: FisicoquimicaData
-): { categoria: Categoria; observaciones: string[]; brixPromedio: number; phPromedio: number } {
+  fisico: FisicoquimicaData,
+  pesoNeto: number
+): {
+  categoria: Categoria;
+  observaciones: string[];
+  brixPromedio: number;
+  phPromedio: number;
+  noConformeVisualCount: number;
+} {
   const obs: string[] = [];
 
-  // Visual checks
-  const podredumbre = parseFloat(visual.podredumbre) || 0;
-  const bayasDaniadas = parseFloat(visual.bayasDaniadas) || 0;
-  const deshidratacion = parseFloat(visual.deshidratacion) || 0;
-  const bayasVerdes = parseFloat(visual.bayasVerdes) || 0;
-  const materiaExtrana = parseFloat(visual.materiaExtrana) || 0;
+  // ── Convert kg weights → percentages ──────────────────
+  const toKg = (s: string) => parseFloat(s) || 0;
+  const toPct = (kg: number) => pesoNeto > 0 ? (kg / pesoNeto) * 100 : 0;
 
-  // Brix promedio
+  const podredumbre_pct = toPct(toKg(visual.podredumbre));
+  const bayasDaniadas_pct = toPct(toKg(visual.bayasDaniadas));
+  const deshidratacion_pct = toPct(toKg(visual.deshidratacion));
+  const bayasVerdes_pct = toPct(toKg(visual.bayasVerdes));
+  const materiaExtrana_pct = toPct(toKg(visual.materiaExtrana));
+
+  // ── Brix promedio ──────────────────────────────────────
   const b1 = parseFloat(fisico.brix1) || 0;
   const b2 = parseFloat(fisico.brix2) || 0;
   const b3 = parseFloat(fisico.brix3) || 0;
   const brixPromedio = (b1 + b2 + b3) / 3;
 
-  // pH promedio
+  // ── pH promedio ────────────────────────────────────────
   const p1 = parseFloat(fisico.ph1) || 0;
   const p2 = parseFloat(fisico.ph2) || 0;
   const phPromedio = (p1 + p2) / 2;
 
-  let esNoConforme = false;
-  let esObservado = false;
+  // ── Count visual non-conforming parameters ─────────────
+  let noConformeVisualCount = 0;
+  let esObservadoVisual = false;
 
-  // Inspección visual
-  if (podredumbre > LIMITES_VISUAL.podredumbre.max) {
-    obs.push(`Podredumbre/moho supera límite (${podredumbre}% > ${LIMITES_VISUAL.podredumbre.max}%)`);
-    esNoConforme = true;
+  if (podredumbre_pct > LIMITES_VISUAL.podredumbre.max) {
+    obs.push(`Podredumbre/moho: ${podredumbre_pct.toFixed(2)}% (límite ≤ ${LIMITES_VISUAL.podredumbre.max}%) — No conforme - Revisar`);
+    noConformeVisualCount++;
   }
-  if (bayasDaniadas > LIMITES_VISUAL.bayasDaniadas.max) {
-    obs.push(`Bayas dañadas supera límite (${bayasDaniadas}% > ${LIMITES_VISUAL.bayasDaniadas.max}%)`);
-    esNoConforme = true;
+  if (bayasDaniadas_pct > LIMITES_VISUAL.bayasDaniadas.max) {
+    obs.push(`Bayas dañadas: ${bayasDaniadas_pct.toFixed(2)}% (límite ≤ ${LIMITES_VISUAL.bayasDaniadas.max}%) — No conforme - Revisar`);
+    noConformeVisualCount++;
   }
-  if (deshidratacion > LIMITES_VISUAL.deshidratacion.max) {
-    obs.push(`Deshidratación supera límite (${deshidratacion}% > ${LIMITES_VISUAL.deshidratacion.max}%)`);
-    esNoConforme = true;
+  if (deshidratacion_pct > LIMITES_VISUAL.deshidratacion.max) {
+    obs.push(`Deshidratación: ${deshidratacion_pct.toFixed(2)}% (límite ≤ ${LIMITES_VISUAL.deshidratacion.max}%) — No conforme - Revisar`);
+    noConformeVisualCount++;
   }
-  if (materiaExtrana > LIMITES_VISUAL.materiaExtrana.max) {
-    obs.push(`Materia extraña supera límite (${materiaExtrana}% > ${LIMITES_VISUAL.materiaExtrana.max}%)`);
-    esNoConforme = true;
+  if (materiaExtrana_pct > LIMITES_VISUAL.materiaExtrana.max) {
+    obs.push(`Materia extraña: ${materiaExtrana_pct.toFixed(2)}% (límite ≤ ${LIMITES_VISUAL.materiaExtrana.max}%) — No conforme - Revisar`);
+    noConformeVisualCount++;
   }
-  if (bayasVerdes > LIMITES_VISUAL.bayasVerdes.observadoMax) {
-    obs.push(`Bayas verdes no conforme (${bayasVerdes}% > ${LIMITES_VISUAL.bayasVerdes.observadoMax}%)`);
-    esNoConforme = true;
-  } else if (bayasVerdes > LIMITES_VISUAL.bayasVerdes.conformeMax) {
-    obs.push(`Bayas verdes en rango observado (${bayasVerdes}%)`);
-    esObservado = true;
+  if (bayasVerdes_pct > LIMITES_VISUAL.bayasVerdes.observadoMax) {
+    obs.push(`Bayas verdes: ${bayasVerdes_pct.toFixed(2)}% (límite ≤ ${LIMITES_VISUAL.bayasVerdes.observadoMax}%) — No conforme - Revisar`);
+    noConformeVisualCount++;
+  } else if (bayasVerdes_pct > LIMITES_VISUAL.bayasVerdes.conformeMax) {
+    obs.push(`Bayas verdes en zona observada: ${bayasVerdes_pct.toFixed(2)}% (${LIMITES_VISUAL.bayasVerdes.conformeMax}–${LIMITES_VISUAL.bayasVerdes.observadoMax}%)`);
+    esObservadoVisual = true;
   }
 
-  // Fisicoquímica
+  // ── Fisicoquímica ──────────────────────────────────────
+  let esNoConformeFisico = false;
+
   if (b1 > 0 && b2 > 0 && b3 > 0) {
     if (brixPromedio < LIMITES_FISICOQUIMICA.brix.min) {
-      obs.push(`°Brix promedio bajo el mínimo (${brixPromedio.toFixed(2)} < ${LIMITES_FISICOQUIMICA.brix.min})`);
-      esNoConforme = true;
+      obs.push(`°Brix promedio bajo el mínimo: ${brixPromedio.toFixed(2)} (mínimo ${LIMITES_FISICOQUIMICA.brix.min})`);
+      esNoConformeFisico = true;
     } else if (brixPromedio > LIMITES_FISICOQUIMICA.brix.max) {
-      obs.push(`°Brix promedio sobre el máximo (${brixPromedio.toFixed(2)} > ${LIMITES_FISICOQUIMICA.brix.max})`);
-      esNoConforme = true;
+      obs.push(`°Brix promedio sobre el máximo: ${brixPromedio.toFixed(2)} (máximo ${LIMITES_FISICOQUIMICA.brix.max})`);
+      esNoConformeFisico = true;
     }
   }
-
   if (p1 > 0 && p2 > 0) {
     if (phPromedio < LIMITES_FISICOQUIMICA.ph.min || phPromedio > LIMITES_FISICOQUIMICA.ph.max) {
-      obs.push(`pH promedio fuera de rango (${phPromedio.toFixed(3)})`);
-      esNoConforme = true;
+      obs.push(`pH promedio fuera de rango: ${phPromedio.toFixed(3)} (rango ${LIMITES_FISICOQUIMICA.ph.min}–${LIMITES_FISICOQUIMICA.ph.max})`);
+      esNoConformeFisico = true;
     }
   }
 
-  const categoria: Categoria = esNoConforme ? "C" : esObservado ? "B" : "A";
-  return { categoria, observaciones: obs, brixPromedio, phPromedio };
+  // ── Final categorization ───────────────────────────────
+  // 3+ visual NC  OR  fisicoquímica NC  →  C
+  // 1–2 visual NC  OR  bayas verdes observado  →  B
+  // All OK  →  A
+  let categoria: Categoria;
+  if (noConformeVisualCount >= 3 || esNoConformeFisico) {
+    categoria = "C";
+  } else if (noConformeVisualCount >= 1 || esObservadoVisual) {
+    categoria = "B";
+  } else {
+    categoria = "A";
+  }
+
+  return { categoria, observaciones: obs, brixPromedio, phPromedio, noConformeVisualCount };
 }
 
 // KPIs calculados del mock
