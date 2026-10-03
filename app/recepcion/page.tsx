@@ -17,6 +17,12 @@ import type {
 
 const STEPS = ["Identificación", "Inspección Visual", "Fisicoquímica", "Decisión"];
 
+function makeCodigoLote() {
+  const year = new Date().getFullYear();
+  const suffix = String(Date.now()).slice(-4);
+  return `LOT-${year}-${suffix}`;
+}
+
 const EMPTY_ID: IdentificacionData = {
   proveedor: "",
   procedencia: "",
@@ -24,7 +30,7 @@ const EMPTY_ID: IdentificacionData = {
   hora: new Date().toTimeString().slice(0, 5),
   variedad: "",
   peso: "",
-  codigoLote: `LOT-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}`,
+  codigoLote: makeCodigoLote(),
 };
 
 const EMPTY_VISUAL: InspeccionVisualData = {
@@ -49,16 +55,33 @@ export default function RecepcionPage() {
   const [visual, setVisual] = useState<InspeccionVisualData>(EMPTY_VISUAL);
   const [fisico, setFisico] = useState<FisicoquimicaData>(EMPTY_FISICO);
 
-  function handleSave(lote: LoteGuardado) {
-    // In a real app, persist to storage. Here we just log it.
-    console.log("Lote guardado:", lote);
-    // Optionally reset after a delay
-    setTimeout(() => {
-      setStep(1);
-      setIdentificacion({ ...EMPTY_ID, codigoLote: `LOT-${new Date().getFullYear()}-${String(Date.now()).slice(-4)}` });
-      setVisual(EMPTY_VISUAL);
-      setFisico(EMPTY_FISICO);
-    }, 4000);
+  // ── Save via API ──────────────────────────────
+  async function handleSave(lote: LoteGuardado): Promise<{ ok: boolean; error?: string }> {
+    try {
+      const res = await fetch("/api/lotes", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(lote),
+      });
+
+      const json = await res.json();
+
+      if (!res.ok) {
+        return { ok: false, error: json.error ?? "Error al guardar" };
+      }
+
+      // Reset wizard for next lot after a short delay
+      setTimeout(() => {
+        setStep(1);
+        setIdentificacion({ ...EMPTY_ID, codigoLote: makeCodigoLote() });
+        setVisual(EMPTY_VISUAL);
+        setFisico(EMPTY_FISICO);
+      }, 4000);
+
+      return { ok: true };
+    } catch {
+      return { ok: false, error: "Error de red. Verifique que el servidor esté activo." };
+    }
   }
 
   return (

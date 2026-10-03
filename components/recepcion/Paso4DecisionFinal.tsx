@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import {
   CheckCircle2,
   AlertTriangle,
@@ -8,6 +8,8 @@ import {
   Save,
   ChevronRight,
   Award,
+  Loader2,
+  AlertCircle,
 } from "lucide-react";
 import type {
   IdentificacionData,
@@ -24,12 +26,9 @@ interface Paso4Props {
   visual: InspeccionVisualData;
   fisico: FisicoquimicaData;
   onPrev: () => void;
-  onSave: (lote: LoteGuardado) => void;
+  onSave: (lote: LoteGuardado) => Promise<{ ok: boolean; error?: string }>;
 }
 
-// ─────────────────────────────────────────
-// Category result card
-// ─────────────────────────────────────────
 const CAT_CONFIG: Record<
   NonNullable<Categoria>,
   {
@@ -79,9 +78,6 @@ const CAT_CONFIG: Record<
   },
 };
 
-// ─────────────────────────────────────────
-// Summary row
-// ─────────────────────────────────────────
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-center justify-between py-2 border-b border-stone-800/60 last:border-0">
@@ -91,9 +87,6 @@ function SummaryItem({ label, value }: { label: string; value: string }) {
   );
 }
 
-// ─────────────────────────────────────────
-// Paso 4
-// ─────────────────────────────────────────
 export function Paso4DecisionFinal({
   identificacion,
   visual,
@@ -101,33 +94,53 @@ export function Paso4DecisionFinal({
   onPrev,
   onSave,
 }: Paso4Props) {
-  const { categoria, observaciones, brixPromedio, phPromedio } = evaluarCategoria(
-    visual,
-    fisico
-  );
+  const { categoria, observaciones, brixPromedio, phPromedio } = evaluarCategoria(visual, fisico);
 
-  const [saved, setSaved] = React.useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [apiError, setApiError] = useState<string | null>(null);
 
   const cfg = categoria ? CAT_CONFIG[categoria] : null;
   const CatIcon = cfg?.Icon ?? CheckCircle2;
 
-  function handleSave() {
+  async function handleSave() {
+    setSaving(true);
+    setApiError(null);
+
     const lote: LoteGuardado = {
       id: Date.now().toString(),
       codigoLote: identificacion.codigoLote,
       proveedor: identificacion.proveedor,
       variedad: identificacion.variedad,
+      procedencia: identificacion.procedencia,
       fecha: identificacion.fecha,
+      hora: identificacion.hora,
       peso: parseFloat(identificacion.peso),
       brixPromedio: parseFloat(brixPromedio.toFixed(2)),
       phPromedio: parseFloat(phPromedio.toFixed(3)),
       categoria,
       observaciones,
+      // Visual data for traceability
+      inspeccionVisual: {
+        podredumbre: parseFloat(visual.podredumbre),
+        bayasDaniadas: parseFloat(visual.bayasDaniadas),
+        deshidratacion: parseFloat(visual.deshidratacion),
+        bayasVerdes: parseFloat(visual.bayasVerdes),
+        materiaExtrana: parseFloat(visual.materiaExtrana),
+      },
     };
-    onSave(lote);
-    setSaved(true);
+
+    const result = await onSave(lote);
+    setSaving(false);
+
+    if (result.ok) {
+      setSaved(true);
+    } else {
+      setApiError(result.error ?? "Error desconocido al guardar");
+    }
   }
 
+  // ── Success screen ──
   if (saved) {
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-16 text-center">
@@ -137,11 +150,16 @@ export function Paso4DecisionFinal({
         <div>
           <h2 className="text-2xl font-bold text-stone-100">Lote guardado exitosamente</h2>
           <p className="text-stone-400 mt-2">
-            El lote <span className="font-mono text-amber-400">{identificacion.codigoLote}</span> ha
-            sido registrado con Categoría{" "}
-            <span className={`font-bold ${cfg?.textColor}`}>{categoria}</span>.
+            El lote{" "}
+            <span className="font-mono text-amber-400">{identificacion.codigoLote}</span> fue
+            registrado como{" "}
+            <span className={`font-bold ${cfg?.textColor}`}>Categoría {categoria}</span> y
+            guardado en el sistema.
           </p>
         </div>
+        <p className="text-xs text-stone-600">
+          El formulario se reiniciará automáticamente en unos segundos...
+        </p>
       </div>
     );
   }
@@ -153,11 +171,9 @@ export function Paso4DecisionFinal({
         <div
           className={`relative rounded-2xl border bg-gradient-to-br ${cfg.bg} ${cfg.border} overflow-hidden`}
         >
-          {/* Accent bar */}
           <div className={`absolute top-0 left-0 right-0 h-1 ${cfg.accentBar}`} />
 
           <div className="p-7 flex flex-col gap-5 mt-1">
-            {/* Icon + title */}
             <div className="flex items-center gap-4">
               <div
                 className={`flex items-center justify-center w-14 h-14 rounded-2xl border ${cfg.iconBg}`}
@@ -173,13 +189,13 @@ export function Paso4DecisionFinal({
               </div>
             </div>
 
-            {/* Action */}
-            <div className={`flex items-start gap-2 p-4 rounded-xl border ${cfg.border} bg-stone-900/40`}>
+            <div
+              className={`flex items-start gap-2 p-4 rounded-xl border ${cfg.border} bg-stone-900/40`}
+            >
               <ChevronRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.textColor}`} />
               <p className="text-sm text-stone-300">{cfg.action}</p>
             </div>
 
-            {/* Observations */}
             {observaciones.length > 0 && (
               <div className="flex flex-col gap-2">
                 <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
@@ -187,11 +203,10 @@ export function Paso4DecisionFinal({
                 </p>
                 <ul className="flex flex-col gap-1.5">
                   {observaciones.map((obs, i) => (
-                    <li
-                      key={i}
-                      className="flex items-start gap-2 text-sm text-stone-400"
-                    >
-                      <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.accentBar}`} />
+                    <li key={i} className="flex items-start gap-2 text-sm text-stone-400">
+                      <span
+                        className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.accentBar}`}
+                      />
                       {obs}
                     </li>
                   ))}
@@ -208,7 +223,7 @@ export function Paso4DecisionFinal({
         </div>
       )}
 
-      {/* Summary of entered data */}
+      {/* Summary */}
       <div className="rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden">
         <div className="px-5 py-4 border-b border-stone-800">
           <h3 className="text-sm font-semibold text-stone-300">Resumen del lote</h3>
@@ -216,24 +231,43 @@ export function Paso4DecisionFinal({
         <div className="px-5 py-4">
           <SummaryItem label="Código de lote" value={identificacion.codigoLote} />
           <SummaryItem label="Proveedor" value={identificacion.proveedor} />
+          <SummaryItem label="Procedencia" value={identificacion.procedencia} />
           <SummaryItem label="Variedad" value={identificacion.variedad} />
-          <SummaryItem
-            label="Fecha / Hora"
-            value={`${identificacion.fecha} ${identificacion.hora}`}
-          />
+          <SummaryItem label="Fecha / Hora" value={`${identificacion.fecha}  ${identificacion.hora}`} />
           <SummaryItem label="Peso neto" value={`${identificacion.peso} kg`} />
           <SummaryItem label="°Brix promedio" value={`${brixPromedio.toFixed(2)} °Bx`} />
           <SummaryItem label="pH promedio" value={phPromedio.toFixed(3)} />
         </div>
       </div>
 
+      {/* API error */}
+      {apiError && (
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-900/20 border border-red-700/40">
+          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+          <div>
+            <p className="text-sm font-semibold text-red-300">Error al guardar</p>
+            <p className="text-sm text-red-400 mt-0.5">{apiError}</p>
+          </div>
+        </div>
+      )}
+
       <NavButtons
         onPrev={onPrev}
         onNext={handleSave}
-        nextLabel="Guardar Lote"
+        nextLabel={
+          saving ? "Guardando..." : "Guardar Lote"
+        }
         isLastStep
         prevLabel="Revisar datos"
+        disabledNext={saving}
       />
+
+      {saving && (
+        <div className="flex items-center justify-center gap-2 text-sm text-stone-500">
+          <Loader2 className="w-4 h-4 animate-spin" />
+          Guardando en el sistema...
+        </div>
+      )}
     </div>
   );
 }

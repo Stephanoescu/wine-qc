@@ -30,17 +30,29 @@ export interface FisicoquimicaData {
   ph2: string;
 }
 
+export interface InspeccionVisualGuardada {
+  podredumbre: number;
+  bayasDaniadas: number;
+  deshidratacion: number;
+  bayasVerdes: number;
+  materiaExtrana: number;
+}
+
 export interface LoteGuardado {
   id: string;
   codigoLote: string;
   proveedor: string;
+  procedencia: string;
   variedad: string;
   fecha: string;
+  hora: string;
   peso: number;
   brixPromedio: number;
   phPromedio: number;
   categoria: Categoria;
   observaciones: string[];
+  inspeccionVisual: InspeccionVisualGuardada;
+  savedAt?: string;
 }
 
 // ─────────────────────────────────────────
@@ -75,131 +87,6 @@ export const VARIEDADES_UVA = [
   "Otra",
 ];
 
-// ─────────────────────────────────────────
-// Mock data — historial de lotes
-// ─────────────────────────────────────────
-export const LOTES_MOCK: LoteGuardado[] = [
-  {
-    id: "1",
-    codigoLote: "LOT-2024-001",
-    proveedor: "Viña Santa Rosa",
-    variedad: "Cabernet Sauvignon",
-    fecha: "2024-03-01",
-    peso: 2400,
-    brixPromedio: 18.2,
-    phPromedio: 3.21,
-    categoria: "A",
-    observaciones: [],
-  },
-  {
-    id: "2",
-    codigoLote: "LOT-2024-002",
-    proveedor: "Fundo El Condor",
-    variedad: "Merlot",
-    fecha: "2024-03-02",
-    peso: 1850,
-    brixPromedio: 17.8,
-    phPromedio: 3.45,
-    categoria: "A",
-    observaciones: [],
-  },
-  {
-    id: "3",
-    codigoLote: "LOT-2024-003",
-    proveedor: "Agricola Los Andes",
-    variedad: "Chardonnay",
-    fecha: "2024-03-03",
-    peso: 3100,
-    brixPromedio: 15.4,
-    phPromedio: 3.70,
-    categoria: "C",
-    observaciones: ["°Brix bajo el rango mínimo", "pH fuera de rango"],
-  },
-  {
-    id: "4",
-    codigoLote: "LOT-2024-004",
-    proveedor: "Viña El Roble",
-    variedad: "Borgoña Blanca",
-    fecha: "2024-03-04",
-    peso: 2100,
-    brixPromedio: 16.5,
-    phPromedio: 3.10,
-    categoria: "A",
-    observaciones: [],
-  },
-  {
-    id: "5",
-    codigoLote: "LOT-2024-005",
-    proveedor: "Agricola Maipo",
-    variedad: "Syrah",
-    fecha: "2024-03-05",
-    peso: 1650,
-    brixPromedio: 19.1,
-    phPromedio: 3.55,
-    categoria: "B",
-    observaciones: ["Bayas verdes en rango observado (4.2%)"],
-  },
-  {
-    id: "6",
-    codigoLote: "LOT-2024-006",
-    proveedor: "Fundo Las Palmas",
-    variedad: "Carménère",
-    fecha: "2024-03-06",
-    peso: 2700,
-    brixPromedio: 17.3,
-    phPromedio: 3.30,
-    categoria: "A",
-    observaciones: [],
-  },
-  {
-    id: "7",
-    codigoLote: "LOT-2024-007",
-    proveedor: "Viña Santa Rosa",
-    variedad: "Pinot Noir",
-    fecha: "2024-03-07",
-    peso: 980,
-    brixPromedio: 21.0,
-    phPromedio: 3.80,
-    categoria: "C",
-    observaciones: ["°Brix supera el rango máximo", "pH fuera de rango"],
-  },
-  {
-    id: "8",
-    codigoLote: "LOT-2024-008",
-    proveedor: "Cooperativa del Valle",
-    variedad: "Sauvignon Blanc",
-    fecha: "2024-03-08",
-    peso: 2200,
-    brixPromedio: 18.7,
-    phPromedio: 3.40,
-    categoria: "B",
-    observaciones: ["Deshidratación en límite (1.9%)"],
-  },
-  {
-    id: "9",
-    codigoLote: "LOT-2024-009",
-    proveedor: "Fundo El Condor",
-    variedad: "Merlot",
-    fecha: "2024-03-09",
-    peso: 3400,
-    brixPromedio: 16.9,
-    phPromedio: 2.95,
-    categoria: "A",
-    observaciones: [],
-  },
-  {
-    id: "10",
-    codigoLote: "LOT-2024-010",
-    proveedor: "Agricola Los Andes",
-    variedad: "Cabernet Sauvignon",
-    fecha: "2024-03-10",
-    peso: 1900,
-    brixPromedio: 18.4,
-    phPromedio: 3.25,
-    categoria: "A",
-    observaciones: [],
-  },
-];
 
 // ─────────────────────────────────────────
 // Lógica de evaluación de categoría
