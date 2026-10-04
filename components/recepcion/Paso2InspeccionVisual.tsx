@@ -43,8 +43,6 @@ function DefectoRow({
   descripcion,
   imageSrc,
 }: DefectoRowProps) {
-  const [isExpanded, setIsExpanded] = React.useState(false);
-
   const pct = pctFromKg(valueKg, pesoNeto);
   const hasValue = pct !== null;
 
@@ -73,14 +71,10 @@ function DefectoRow({
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Label + limits */}
         <div className="flex-1 min-w-0">
-          <button
-            onClick={() => setIsExpanded(!isExpanded)}
-            className="flex items-center gap-2 group outline-none"
-          >
+          <div className="flex items-center gap-2 group">
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-            <span className="text-sm font-bold text-marine group-hover:text-gold-dark transition-colors">{label}</span>
-            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
-          </button>
+            <span className="text-sm font-bold text-marine">{label}</span>
+          </div>
           <p className="text-xs text-slate-500 mt-1 ml-4 font-medium">
             {limiteObs !== undefined
               ? `Conforme ≤ ${limiteObs}% · Observado ${limiteObs}–${limiteMax}% · NC > ${limiteMax}%`
@@ -129,24 +123,22 @@ function DefectoRow({
       </div>
 
       {/* Expanded Description & Image */}
-      {isExpanded && (
-        <div className="mt-4 pt-4 border-t border-slate-200/50 flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-top-2">
-          <div className="w-full sm:w-28 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 relative flex flex-col items-center justify-center">
-            <ImageIcon className="w-6 h-6 text-slate-300 mb-1" />
-            <span className="text-[9px] text-slate-400 font-medium text-center px-2 leading-tight">Pendiente imagen<br/>({imageSrc.split('/').pop()})</span>
-            {/* When you put images in public/images folder, this img tag will show them automatically over the placeholder */}
-            <img 
-              src={imageSrc} 
-              alt={label} 
-              className="absolute inset-0 w-full h-full object-cover" 
-              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
-            />
-          </div>
-          <p className="text-sm text-slate-600 leading-relaxed font-medium flex-1">
-            {descripcion}
-          </p>
+      <div className="mt-4 pt-4 border-t border-slate-200/50 flex flex-col sm:flex-row gap-4">
+        <div className="w-full sm:w-28 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 relative flex flex-col items-center justify-center">
+          <ImageIcon className="w-6 h-6 text-slate-300 mb-1" />
+          <span className="text-[9px] text-slate-400 font-medium text-center px-2 leading-tight">Pendiente imagen<br/>({imageSrc.split('/').pop()})</span>
+          {/* When you put images in public/images folder, this img tag will show them automatically over the placeholder */}
+          <img 
+            src={imageSrc} 
+            alt={label} 
+            className="absolute inset-0 w-full h-full object-cover" 
+            onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+          />
         </div>
-      )}
+        <p className="text-sm text-slate-600 leading-relaxed font-medium flex-1">
+          {descripcion}
+        </p>
+      </div>
     </div>
   );
 }
