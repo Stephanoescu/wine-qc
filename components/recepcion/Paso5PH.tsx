@@ -108,8 +108,8 @@ export function Paso5PH({ data, onChange, onNext, onPrev }: Paso5Props) {
                   </button>
                   
                   {/* Inputs para mediciones pH */}
-                  {index === 8 && isChecked && (
-                    <div className="ml-12 mr-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50 animate-in fade-in slide-in-from-top-2">
+                  {index === 8 && (
+                    <div className="ml-12 mr-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-bold text-marine">Determinaciones (pH)</span>
@@ -136,8 +136,8 @@ export function Paso5PH({ data, onChange, onNext, onPrev }: Paso5Props) {
                   )}
 
                   {/* Promedio pH */}
-                  {index === 9 && isChecked && phProm !== null && (
-                    <div className="ml-12 mr-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
+                  {index === 9 && phProm !== null && (
+                    <div className="ml-12 mr-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio Calculado</span>
                       </div>

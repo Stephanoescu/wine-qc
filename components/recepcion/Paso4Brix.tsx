@@ -106,8 +106,8 @@ export function Paso4Brix({ data, onChange, onNext, onPrev }: Paso4Props) {
                   </button>
                   
                   {/* Inputs para mediciones */}
-                  {index === 4 && isChecked && (
-                    <div className="ml-12 mr-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50 animate-in fade-in slide-in-from-top-2">
+                  {index === 4 && (
+                    <div className="ml-12 mr-4 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
                       <div className="flex flex-col gap-3">
                         <div className="flex items-center justify-between mb-1">
                           <span className="text-sm font-bold text-marine">Mediciones (°Brix)</span>
@@ -134,8 +134,8 @@ export function Paso4Brix({ data, onChange, onNext, onPrev }: Paso4Props) {
                   )}
 
                   {/* Promedio */}
-                  {index === 5 && isChecked && brixProm !== null && (
-                    <div className="ml-12 mr-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50 animate-in fade-in slide-in-from-top-2">
+                  {index === 5 && brixProm !== null && (
+                    <div className="ml-12 mr-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
                       <div className="flex items-center gap-2 mb-2">
                         <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio Calculado</span>
                       </div>
