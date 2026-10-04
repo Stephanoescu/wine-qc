@@ -198,3 +198,31 @@ export function calcularKPIs(lotes: LoteGuardado[]) {
   const tasaConformidad = total > 0 ? Math.round((conformes / total) * 100) : 0;
   return { total, conformes, observados, rechazados, totalKg, tasaConformidad };
 }
+
+// ─────────────────────────────────────────
+// LocalStorage Database Wrapper (Para Vercel)
+// ─────────────────────────────────────────
+export function getLotesLocal(): LoteGuardado[] {
+  if (typeof window === "undefined") return [];
+  const stored = localStorage.getItem("wine_qc_lotes");
+  return stored ? JSON.parse(stored) : [];
+}
+
+export function saveLoteLocal(lote: LoteGuardado) {
+  if (typeof window === "undefined") return;
+  const lotes = getLotesLocal();
+  const index = lotes.findIndex((l) => l.id === lote.id);
+  if (index >= 0) {
+    lotes[index] = { ...lote, savedAt: new Date().toISOString() };
+  } else {
+    lotes.unshift({ ...lote, savedAt: new Date().toISOString() });
+  }
+  localStorage.setItem("wine_qc_lotes", JSON.stringify(lotes));
+}
+
+export function deleteLoteLocal(id: string) {
+  if (typeof window === "undefined") return;
+  const lotes = getLotesLocal();
+  const filtered = lotes.filter((l) => l.id !== id);
+  localStorage.setItem("wine_qc_lotes", JSON.stringify(filtered));
+}

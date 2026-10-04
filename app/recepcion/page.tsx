@@ -55,6 +55,8 @@ const EMPTY_FISICO: FisicoquimicaData = {
 
 import { useRouter } from "next/navigation";
 
+import { getLotesLocal, saveLoteLocal } from "@/lib/recepcion-data";
+
 export default function RecepcionPage() {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -70,33 +72,34 @@ export default function RecepcionPage() {
     const id = params.get("edit");
     if (id) {
       setEditId(id);
-      fetch("/api/lotes")
-        .then((res) => res.json())
-        .then((data: LoteGuardado[]) => {
-          const lote: any = data.find((l: any) => l.id === id);
-          if (lote) {
-            setIdentificacion({
-              proveedor: lote.proveedor,
-              procedencia: lote.procedencia,
-              fecha: lote.fecha,
-              hora: lote.hora,
-              variedad: lote.variedad,
-              peso: lote.peso.toString(),
-              codigoLote: lote.codigoLote,
+      try {
+        const data = getLotesLocal();
+        const lote: any = data.find((l: any) => l.id === id);
+        if (lote) {
+          setIdentificacion({
+            proveedor: lote.proveedor,
+            procedencia: lote.procedencia,
+            fecha: lote.fecha,
+            hora: lote.hora,
+            variedad: lote.variedad,
+            peso: lote.peso.toString(),
+            codigoLote: lote.codigoLote,
+          });
+          if (lote.inspeccionVisual) {
+            setVisual({
+              podredumbre: lote.inspeccionVisual.podredumbre?.toString() || "",
+              bayasDaniadas: lote.inspeccionVisual.bayasDaniadas?.toString() || "",
+              deshidratacion: lote.inspeccionVisual.deshidratacion?.toString() || "",
+              bayasVerdes: lote.inspeccionVisual.bayasVerdes?.toString() || "",
+              materiaExtrana: lote.inspeccionVisual.materiaExtrana?.toString() || "",
             });
-            if (lote.inspeccionVisual) {
-              setVisual({
-                podredumbre: lote.inspeccionVisual.podredumbre?.toString() || "",
-                bayasDaniadas: lote.inspeccionVisual.bayasDaniadas?.toString() || "",
-                deshidratacion: lote.inspeccionVisual.deshidratacion?.toString() || "",
-                bayasVerdes: lote.inspeccionVisual.bayasVerdes?.toString() || "",
-                materiaExtrana: lote.inspeccionVisual.materiaExtrana?.toString() || "",
-              });
-            }
           }
-          setIsLoaded(true);
-        })
-        .catch(() => setIsLoaded(true));
+        }
+      } catch (err) {
+        console.error("Error cargando lote", err);
+      } finally {
+        setIsLoaded(true);
+      }
     } else {
       setIsLoaded(true);
     }
@@ -106,24 +109,13 @@ export default function RecepcionPage() {
 
   async function handleSave(lote: LoteGuardado): Promise<{ ok: boolean; error?: string }> {
     try {
-      const url = editId ? `/api/lotes/${editId}` : "/api/lotes";
-      const method = editId ? "PUT" : "POST";
-
-      const res = await fetch(url, {
-        method,
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(lote),
-      });
-      const json = await res.json();
-      if (!res.ok) return { ok: false, error: json.error ?? "Error al guardar" };
-
+      saveLoteLocal(lote);
       setTimeout(() => {
         router.push("/reportes");
-      }, 3000);
-
+      }, 2000);
       return { ok: true };
     } catch {
-      return { ok: false, error: "Error de red. Verifique que el servidor esté activo." };
+      return { ok: false, error: "Error de almacenamiento. Intente nuevamente." };
     }
   }
 

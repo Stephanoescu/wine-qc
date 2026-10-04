@@ -384,21 +384,21 @@ function LotesTable({
 }
 
 // ─────────────────────────────────────────
-// Reportes Page — fetches from /api/lotes
+// Reportes Page — fetches from localStorage
 // ─────────────────────────────────────────
+import { getLotesLocal, deleteLoteLocal } from "@/lib/recepcion-data";
+
 export default function ReportesPage() {
   const [lotes, setLotes] = useState<LoteGuardado[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedLote, setSelectedLote] = useState<LoteGuardado | null>(null);
 
-  const fetchLotes = useCallback(async () => {
+  const fetchLotes = useCallback(() => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch("/api/lotes", { cache: "no-store" });
-      if (!res.ok) throw new Error("Error al cargar los datos");
-      const data: LoteGuardado[] = await res.json();
+      const data = getLotesLocal();
       setLotes(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Error desconocido");
@@ -411,12 +411,10 @@ export default function ReportesPage() {
     fetchLotes();
   }, [fetchLotes]);
 
-  async function handleDelete(id: string) {
+  function handleDelete(id: string) {
     try {
-      const res = await fetch(`/api/lotes?id=${id}`, { method: "DELETE" });
-      if (res.ok) {
-        setLotes((prev) => prev.filter((l) => l.id !== id));
-      }
+      deleteLoteLocal(id);
+      setLotes((prev) => prev.filter((l) => l.id !== id));
     } catch {
       alert("Error al eliminar el lote");
     }
