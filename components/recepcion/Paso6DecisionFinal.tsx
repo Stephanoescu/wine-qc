@@ -81,16 +81,16 @@ const CAT_CONFIG: Record<
 };
 
 // ── Classification rule summary ──────────────────────
-function ClasificacionReglas({ noConformeVisualCount }: { noConformeVisualCount: number }) {
+function ClasificacionReglas({ categoria }: { categoria: Categoria }) {
   return (
     <div className="flex flex-col gap-1.5">
       <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
-        Criterios de clasificación visual
+        Criterios de clasificación global
       </p>
       {[
-        { rango: "0 parámetros NC", cat: "A", color: "text-emerald-800 bg-emerald-100 border-emerald-200 font-bold", active: noConformeVisualCount === 0 },
-        { rango: "1–2 parámetros NC", cat: "B", color: "text-amber-800 bg-amber-100 border-amber-200 font-bold", active: noConformeVisualCount === 1 || noConformeVisualCount === 2 },
-        { rango: "3 o más parámetros NC", cat: "C", color: "text-red-800 bg-red-100 border-red-200 font-bold", active: noConformeVisualCount >= 3 },
+        { rango: "0 parámetros visuales NC + Fisicoquímica conforme", cat: "A", color: "text-emerald-800 bg-emerald-100 border-emerald-200 font-bold", active: categoria === "A" },
+        { rango: "1–2 parámetros visuales NC", cat: "B", color: "text-amber-800 bg-amber-100 border-amber-200 font-bold", active: categoria === "B" },
+        { rango: "≥ 3 parámetros visuales NC o Fisicoquímica NC", cat: "C", color: "text-red-800 bg-red-100 border-red-200 font-bold", active: categoria === "C" },
       ].map((r) => (
         <div
           key={r.rango}
@@ -240,7 +240,7 @@ export function Paso4DecisionFinal({
             )}
 
             {/* Classification rules mini table */}
-            <ClasificacionReglas noConformeVisualCount={noConformeVisualCount} />
+            <ClasificacionReglas categoria={categoria} />
           </div>
         </div>
       )}
