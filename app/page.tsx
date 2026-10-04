@@ -49,13 +49,13 @@ export default function LandingPage() {
         {/* Company name */}
         <div className="flex flex-col gap-3">
           <h1 className="text-5xl sm:text-7xl font-black text-white leading-none tracking-tight">
-            Bodega
+            Viña D´
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-gold-light via-gold to-gold-dark drop-shadow-lg">
-              Control
+              Los Campos
             </span>
           </h1>
-          <p className="text-base sm:text-lg text-white/90 max-w-md mx-auto leading-relaxed font-light mt-2">
-            Sistema integrado de evaluación y clasificación de uva según grado de madurez para bodegas vitivinícolas.
+          <p className="text-base sm:text-lg text-white/90 max-w-lg mx-auto leading-relaxed font-light mt-2">
+            Procedimiento estandarizado para la evaluación y control de los parámetros críticos de calidad del proceso vitivinícola
           </p>
         </div>
 
