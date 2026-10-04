@@ -33,9 +33,6 @@ export default function LandingPage() {
         <div className="flex items-center">
           <img src="/images/logo.png" alt="Logo" className="h-16 sm:h-20 w-auto object-contain drop-shadow-md" />
         </div>
-        <span className="text-xs text-white/70 tracking-widest uppercase hidden sm:block">
-          Sistema de Calidad Vitivinícola
-        </span>
       </div>
 
       {/* Hero content */}

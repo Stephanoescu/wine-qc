@@ -96,8 +96,8 @@ export default function RecepcionPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Inicio</span>
           </Link>
-          <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
-            <Wine className="w-4 h-4 text-gold-dark flex-shrink-0" />
+          <div className="flex items-center gap-3 flex-1 justify-center sm:justify-start">
+            <img src="/images/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
             <span className="text-sm font-bold text-marine truncate">
               Recepción y Evaluación de Uva
             </span>

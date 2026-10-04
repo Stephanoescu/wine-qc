@@ -90,9 +90,6 @@ export default function InicioPage() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/images/logo.png" alt="Logo" className="h-12 sm:h-14 w-auto object-contain" />
-            <div>
-              <p className="text-xs text-slate-500 font-medium hidden sm:block">Sistema de Calidad Vitivinícola</p>
-            </div>
           </div>
           <Link
             href="/reportes"

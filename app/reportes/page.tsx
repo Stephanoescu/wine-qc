@@ -425,8 +425,8 @@ export default function ReportesPage() {
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Inicio</span>
           </Link>
-          <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
-            <Wine className="w-4 h-4 text-gold flex-shrink-0" />
+          <div className="flex items-center gap-3 flex-1 justify-center sm:justify-start">
+            <img src="/images/logo.png" alt="Logo" className="h-8 w-auto object-contain" />
             <span className="text-sm font-bold text-marine">Dashboard de Reportes</span>
           </div>
           <div className="hidden sm:flex items-center gap-2 text-xs font-medium text-slate-500 bg-slate-100 px-3 py-1.5 rounded-lg">
@@ -441,7 +441,7 @@ export default function ReportesPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div>
             <h1 className="text-2xl font-black text-marine">Reporte de Lotes</h1>
-            <p className="text-sm font-medium text-slate-500 mt-1 capitalize">{mes} · Bodega Control Vitivinícola</p>
+            <p className="text-sm font-medium text-slate-500 mt-1 capitalize">{mes}</p>
           </div>
           <div className="flex gap-3">
             <button
