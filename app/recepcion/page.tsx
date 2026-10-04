@@ -7,8 +7,9 @@ import { WizardProgress } from "@/components/recepcion/WizardUI";
 import { Paso1Identificacion } from "@/components/recepcion/Paso1Identificacion";
 import { Paso2InspeccionVisual } from "@/components/recepcion/Paso2InspeccionVisual";
 import { PasoMuestra } from "@/components/recepcion/PasoMuestra";
-import { Paso3Fisicoquimica } from "@/components/recepcion/Paso3Fisicoquimica";
-import { Paso4DecisionFinal } from "@/components/recepcion/Paso4DecisionFinal";
+import { Paso4Brix } from "@/components/recepcion/Paso4Brix";
+import { Paso5PH } from "@/components/recepcion/Paso5PH";
+import { Paso4DecisionFinal as Paso6DecisionFinal } from "@/components/recepcion/Paso6DecisionFinal";
 import type {
   IdentificacionData,
   InspeccionVisualData,
@@ -17,9 +18,9 @@ import type {
 } from "@/lib/recepcion-data";
 
 // ─────────────────────────────────────────
-// 5-step wizard
+// 6-step wizard
 // ─────────────────────────────────────────
-const STEPS = ["Identificación", "Inspección Visual", "Muestra", "Fisicoquímica", "Decisión"];
+const STEPS = ["Identificación", "Inspección Visual", "Muestra", "°Brix", "pH", "Decisión"];
 
 function makeCodigoLote() {
   const year = new Date().getFullYear();
@@ -149,7 +150,7 @@ export default function RecepcionPage() {
             Paso {step}/{STEPS.length}
           </span>
         </div>
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-4">
+        <div className="max-w-3xl mx-auto px-4 sm:px-6 pb-4 overflow-x-auto">
           <WizardProgress steps={STEPS} currentStep={step} />
         </div>
       </header>
@@ -179,7 +180,7 @@ export default function RecepcionPage() {
           />
         )}
         {step === 4 && (
-          <Paso3Fisicoquimica
+          <Paso4Brix
             data={fisico}
             onChange={setFisico}
             onNext={() => setStep(5)}
@@ -187,12 +188,20 @@ export default function RecepcionPage() {
           />
         )}
         {step === 5 && (
-          <Paso4DecisionFinal
+          <Paso5PH
+            data={fisico}
+            onChange={setFisico}
+            onNext={() => setStep(6)}
+            onPrev={() => setStep(4)}
+          />
+        )}
+        {step === 6 && (
+          <Paso6DecisionFinal
             identificacion={identificacion}
             visual={visual}
             fisico={fisico}
             pesoNeto={pesoNeto}
-            onPrev={() => setStep(4)}
+            onPrev={() => setStep(5)}
             onSave={handleSave}
             isEditing={!!editId}
           />
