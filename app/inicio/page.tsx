@@ -5,12 +5,11 @@ import Link from "next/link";
 import {
   ClipboardList,
   BarChart3,
-  Wine,
   ArrowRight,
-  Shield,
-  Leaf,
-  Thermometer,
-  Activity,
+  ArrowRightLeft,
+  Cog,
+  FlaskConical,
+  Hourglass,
 } from "lucide-react";
 
 interface ProcedimientoCardProps {
@@ -146,37 +145,31 @@ export default function InicioPage() {
             primary
           />
           <ProcedimientoCard
-            href="/reportes"
-            icon={BarChart3}
-            title="Dashboard de Reportes"
-            description="Resumen de lotes evaluados, KPIs de conformidad y distribución histórica por categorías A, B y C."
-          />
-          <ProcedimientoCard
-            href="/control-estadistico"
-            icon={Activity}
-            title="Control Estadístico"
-            description="Gráficos de control SPC, cartas de control X̄-R y análisis de tendencias de los parámetros fisicoquímicos."
+            href="#"
+            icon={ArrowRightLeft}
+            title="Etapa Trasiego"
+            description="Control y registro de movimientos de vino entre depósitos."
             disabled
           />
           <ProcedimientoCard
             href="#"
-            icon={Shield}
-            title="Control de Proceso"
-            description="Monitoreo de parámetros durante la fermentación y crianza."
+            icon={Cog}
+            title="Proceso de Trituración"
+            description="Monitoreo del despalillado y estrujado mecánico de la uva."
             disabled
           />
           <ProcedimientoCard
             href="#"
-            icon={Leaf}
-            title="Trazabilidad de Lotes"
-            description="Seguimiento completo del recorrido de cada lote desde la viña hasta el embotellado."
+            icon={FlaskConical}
+            title="Dosificación de Correctores de Acidez"
+            description="Ajustes y adiciones enológicas para la corrección del mosto."
             disabled
           />
           <ProcedimientoCard
             href="#"
-            icon={Thermometer}
-            title="Control de Temperatura"
-            description="Registro y alertas de temperatura en depósitos de almacenamiento y sala de barricas."
+            icon={Hourglass}
+            title="Proceso Maceración (Horas)"
+            description="Control de tiempos y temperatura durante el contacto pelicular."
             disabled
           />
         </div>
