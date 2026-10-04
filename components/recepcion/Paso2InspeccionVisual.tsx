@@ -216,7 +216,7 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             onChange={set("podredumbre")}
             limiteMax={LIMITES_VISUAL.podredumbre.max}
             descripcion="Bayas con crecimiento fúngico visible, descomposición, tejido blando o presencia de olores anormales."
-            imageSrc="/images/moho.png"
+            imageSrc="/images/moho.jpeg"
           />
           <DefectoRow
             label={LIMITES_VISUAL.bayasDaniadas.label}
@@ -244,7 +244,7 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             limiteObs={LIMITES_VISUAL.bayasVerdes.conformeMax}
             limiteMax={LIMITES_VISUAL.bayasVerdes.observadoMax}
             descripcion="Bayas con desarrollo insuficiente de color, textura o condición aparente respecto del resto del lote."
-            imageSrc="/images/verdes.png"
+            imageSrc="/images/verdes.jpeg"
           />
           <DefectoRow
             label={LIMITES_VISUAL.materiaExtrana.label}
