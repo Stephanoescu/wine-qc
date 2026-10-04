@@ -1,203 +1,184 @@
 "use client";
 
 import React from "react";
-import { AlertCircle, CheckCircle2 } from "lucide-react";
+import { Check } from "lucide-react";
 
 // ─────────────────────────────────────────
-// WizardProgress — header stepper
+// Stepper Progress
 // ─────────────────────────────────────────
-interface WizardProgressProps {
-  steps: string[];
-  currentStep: number;
-}
-
-export function WizardProgress({ steps, currentStep }: WizardProgressProps) {
+export function WizardProgress({ steps, currentStep }: { steps: string[]; currentStep: number }) {
   return (
-    <div className="w-full flex items-center gap-0">
-      {steps.map((label, i) => {
-        const stepNum = i + 1;
-        const isDone = stepNum < currentStep;
-        const isActive = stepNum === currentStep;
-        return (
-          <React.Fragment key={i}>
-            <div className="flex flex-col items-center gap-1.5 flex-shrink-0">
+    <div className="relative">
+      <div className="absolute top-1/2 left-0 right-0 h-0.5 bg-slate-200 -translate-y-1/2 rounded-full" />
+      <div
+        className="absolute top-1/2 left-0 h-0.5 bg-marine -translate-y-1/2 transition-all duration-500 rounded-full"
+        style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
+      />
+      <div className="relative flex justify-between">
+        {steps.map((label, idx) => {
+          const stepNum = idx + 1;
+          const isActive = stepNum === currentStep;
+          const isDone = stepNum < currentStep;
+          return (
+            <div key={label} className="flex flex-col items-center gap-2">
               <div
-                className={`flex items-center justify-center w-8 h-8 rounded-full text-xs font-bold border-2 transition-all ${
-                  isDone
-                    ? "bg-emerald-600 border-emerald-600 text-white"
-                    : isActive
-                    ? "bg-red-900 border-red-600 text-red-200"
-                    : "bg-stone-800 border-stone-700 text-stone-500"
+                className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 z-10 ${
+                  isActive
+                    ? "bg-marine border-marine text-white shadow-md shadow-marine/20 scale-110"
+                    : isDone
+                    ? "bg-marine border-marine text-white"
+                    : "bg-white border-slate-300 text-slate-400"
                 }`}
               >
-                {isDone ? <CheckCircle2 className="w-4 h-4" /> : stepNum}
+                {isDone ? <Check className="w-4 h-4" /> : stepNum}
               </div>
               <span
-                className={`text-xs hidden sm:block font-medium ${
-                  isActive ? "text-red-300" : isDone ? "text-emerald-500" : "text-stone-600"
+                className={`text-[10px] sm:text-xs font-semibold uppercase tracking-wider absolute -bottom-5 text-center w-24 -ml-8 ${
+                  isActive ? "text-marine" : isDone ? "text-marine-light" : "text-slate-400"
                 }`}
               >
                 {label}
               </span>
             </div>
-            {i < steps.length - 1 && (
-              <div
-                className={`flex-1 h-0.5 mx-2 mb-4 rounded-full transition-all ${
-                  isDone ? "bg-emerald-600" : "bg-stone-700"
-                }`}
-              />
-            )}
-          </React.Fragment>
-        );
-      })}
+          );
+        })}
+      </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// FormField — labeled input wrapper
+// Form Field Wrapper
 // ─────────────────────────────────────────
-interface FormFieldProps {
+export function FormField({
+  label,
+  required,
+  children,
+  error,
+}: {
   label: string;
+  required?: boolean;
   children: React.ReactNode;
   error?: string;
-  hint?: string;
-  required?: boolean;
-}
-
-export function FormField({ label, children, error, hint, required }: FormFieldProps) {
+}) {
   return (
     <div className="flex flex-col gap-1.5">
-      <label className="text-sm font-medium text-stone-300">
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
+      <label className="text-sm font-bold text-marine-light">
+        {label} {required && <span className="text-gold-dark">*</span>}
       </label>
       {children}
-      {error && (
-        <p className="text-xs text-red-400 flex items-center gap-1">
-          <AlertCircle className="w-3 h-3 flex-shrink-0" />
-          {error}
-        </p>
-      )}
-      {hint && !error && <p className="text-xs text-stone-500">{hint}</p>}
+      {error && <span className="text-xs text-red-600 font-medium">{error}</span>}
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// StyledInput — dark themed input
+// Inputs
 // ─────────────────────────────────────────
-interface StyledInputProps extends React.InputHTMLAttributes<HTMLInputElement> {
-  hasError?: boolean;
-  suffix?: string;
+export const inputBaseClasses =
+  "w-full bg-white border border-slate-300 rounded-xl px-4 py-3 text-sm text-marine placeholder:text-slate-400 focus:outline-none focus:border-marine focus:ring-1 focus:ring-marine transition-all shadow-sm";
+
+export function StyledInput(props: React.InputHTMLAttributes<HTMLInputElement>) {
+  return <input {...props} className={`${inputBaseClasses} ${props.className || ""}`} />;
 }
 
-export function StyledInput({ hasError, suffix, className = "", ...props }: StyledInputProps) {
+export function StyledSelect({
+  options,
+  ...props
+}: React.SelectHTMLAttributes<HTMLSelectElement> & { options: string[] }) {
   return (
-    <div
-      className={`flex items-center rounded-xl border bg-stone-800/60 overflow-hidden transition-colors ${
-        hasError
-          ? "border-red-500/70 focus-within:border-red-500"
-          : "border-stone-700 focus-within:border-red-700/60"
-      }`}
-    >
-      <input
+    <div className="relative">
+      <select
         {...props}
-        className={`flex-1 bg-transparent px-4 py-3 text-sm text-stone-100 placeholder:text-stone-600 outline-none ${className}`}
-      />
-      {suffix && (
-        <span className="pr-3 text-xs text-stone-500 font-mono flex-shrink-0">{suffix}</span>
-      )}
+        className={`${inputBaseClasses} appearance-none pr-10 ${props.value ? "text-marine" : "text-slate-400"}`}
+      >
+        <option value="" disabled>
+          Seleccione una opción...
+        </option>
+        {options.map((o) => (
+          <option key={o} value={o} className="text-marine">
+            {o}
+          </option>
+        ))}
+      </select>
+      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none">
+        <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+        </svg>
+      </div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// StyledSelect
+// Section Card
 // ─────────────────────────────────────────
-interface StyledSelectProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
-  hasError?: boolean;
-}
-
-export function StyledSelect({ hasError, children, ...props }: StyledSelectProps) {
-  return (
-    <select
-      {...props}
-      className={`w-full rounded-xl border bg-stone-800/60 px-4 py-3 text-sm text-stone-100 outline-none transition-colors appearance-none ${
-        hasError
-          ? "border-red-500/70 focus:border-red-500"
-          : "border-stone-700 focus:border-red-700/60"
-      }`}
-    >
-      {children}
-    </select>
-  );
-}
-
-// ─────────────────────────────────────────
-// SectionCard — step wrapper card
-// ─────────────────────────────────────────
-interface SectionCardProps {
+export function SectionCard({
+  title,
+  subtitle,
+  icon: Icon,
+  children,
+}: {
   title: string;
   subtitle?: string;
   icon: React.ElementType;
   children: React.ReactNode;
-}
-
-export function SectionCard({ title, subtitle, icon: Icon, children }: SectionCardProps) {
+}) {
   return (
-    <div className="rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden">
-      <div className="flex items-center gap-3 px-6 py-5 border-b border-stone-800 bg-gradient-to-r from-red-950/40 to-transparent">
-        <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-900/40 border border-red-800/40">
-          <Icon className="w-4.5 h-4.5 text-red-400" strokeWidth={1.5} />
+    <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+      <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 bg-slate-50">
+        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-marine text-white shadow-sm">
+          <Icon className="w-5 h-5" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-sm font-bold text-stone-100">{title}</h2>
-          {subtitle && <p className="text-xs text-stone-500 mt-0.5">{subtitle}</p>}
+          <h2 className="text-base font-bold text-marine">{title}</h2>
+          {subtitle && <p className="text-xs text-slate-500 mt-0.5 font-medium">{subtitle}</p>}
         </div>
       </div>
-      <div className="px-6 py-6">{children}</div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
 
 // ─────────────────────────────────────────
-// NavButtons — prev/next wizard footer
+// Navigation Buttons
 // ─────────────────────────────────────────
-interface NavButtonsProps {
+export function NavButtons({
+  onPrev,
+  onNext,
+  nextLabel = "Siguiente",
+  prevLabel = "Atrás",
+  disabledNext = false,
+  isLastStep = false,
+}: {
   onPrev?: () => void;
   onNext: () => void;
   nextLabel?: string;
   prevLabel?: string;
   disabledNext?: boolean;
   isLastStep?: boolean;
-}
-
-export function NavButtons({
-  onPrev,
-  onNext,
-  nextLabel = "Siguiente",
-  prevLabel = "Atrás",
-  disabledNext,
-  isLastStep,
-}: NavButtonsProps) {
+}) {
   return (
-    <div className="flex gap-3 pt-2">
-      {onPrev && (
+    <div className="flex items-center justify-between mt-8">
+      {onPrev ? (
         <button
           onClick={onPrev}
-          className="px-5 py-3 rounded-xl border border-stone-700 text-sm font-medium text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-all"
+          className="px-6 py-3 rounded-xl border border-slate-300 text-sm font-semibold text-slate-600 hover:bg-slate-50 hover:text-marine transition-colors"
         >
           {prevLabel}
         </button>
+      ) : (
+        <div /> // Spacer
       )}
       <button
         onClick={onNext}
         disabled={disabledNext}
-        className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-          isLastStep
-            ? "bg-emerald-700 hover:bg-emerald-600 text-white"
-            : "bg-red-900 hover:bg-red-800 text-red-100"
+        className={`px-6 py-3 rounded-xl text-sm font-bold transition-all shadow-sm ${
+          disabledNext
+            ? "bg-slate-100 text-slate-400 cursor-not-allowed border border-slate-200"
+            : isLastStep
+            ? "bg-gold hover:bg-gold-dark text-white shadow-gold/20 hover:shadow-md border border-gold-dark"
+            : "bg-marine hover:bg-marine-light text-white shadow-marine/20 hover:shadow-md border border-marine-dark"
         }`}
       >
         {nextLabel}
@@ -207,49 +188,29 @@ export function NavButtons({
 }
 
 // ─────────────────────────────────────────
-// ValueIndicator — colored value badge
+// Value Range Indicator (Paso 3)
 // ─────────────────────────────────────────
-interface ValueIndicatorProps {
-  value: number | null;
-  min?: number;
-  max?: number;
-  label: string;
-  unit?: string;
-}
+export function ValueIndicator({ value, min, max }: { value: number; min: number; max: number }) {
+  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
+  const isOk = value >= min && value <= max;
 
-export function ValueIndicator({ value, min, max, label, unit = "" }: ValueIndicatorProps) {
-  if (value === null || isNaN(value)) {
-    return (
-      <div className="flex items-center justify-between px-4 py-3 rounded-xl bg-stone-800/50 border border-stone-700/50">
-        <span className="text-xs text-stone-500">{label}</span>
-        <span className="text-xs text-stone-600 font-mono">—</span>
-      </div>
-    );
-  }
-
-  const inRange = (min === undefined || value >= min) && (max === undefined || value <= max);
   return (
-    <div
-      className={`flex items-center justify-between px-4 py-3 rounded-xl border transition-colors ${
-        inRange
-          ? "bg-emerald-900/20 border-emerald-700/30"
-          : "bg-red-900/20 border-red-700/40"
-      }`}
-    >
-      <span className={`text-xs font-medium ${inRange ? "text-emerald-400" : "text-red-400"}`}>
-        {label}
-      </span>
-      <div className="flex items-center gap-2">
-        <span
-          className={`text-sm font-bold font-mono ${inRange ? "text-emerald-300" : "text-red-300"}`}
-        >
-          {value.toFixed(value < 10 ? 3 : 1)}{unit}
-        </span>
-        {inRange ? (
-          <CheckCircle2 className="w-3.5 h-3.5 text-emerald-500" />
-        ) : (
-          <AlertCircle className="w-3.5 h-3.5 text-red-500" />
-        )}
+    <div className="flex flex-col gap-2 mt-4 p-5 rounded-xl border border-slate-200 bg-slate-50">
+      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
+        <span>Min {min}</span>
+        <span className={isOk ? "text-marine" : "text-red-600"}>Promedio: {value.toFixed(2)}</span>
+        <span>Max {max}</span>
+      </div>
+      <div className="relative h-2.5 bg-slate-200 rounded-full overflow-hidden">
+        {/* Ideal range indicator */}
+        <div className="absolute top-0 bottom-0 left-0 right-0 bg-emerald-100/50" />
+        {/* Actual value pip */}
+        <div
+          className={`absolute top-0 bottom-0 w-1.5 -ml-[3px] rounded-full transition-all duration-500 z-10 ${
+            isOk ? "bg-marine shadow-[0_0_8px_rgba(17,41,76,0.8)]" : "bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+          }`}
+          style={{ left: `${pct}%` }}
+        />
       </div>
     </div>
   );

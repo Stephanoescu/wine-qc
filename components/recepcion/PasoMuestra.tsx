@@ -50,17 +50,17 @@ export function PasoMuestra({ onNext, onPrev }: PasoMuestraProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Card */}
-      <div className="rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden">
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
         {/* Header */}
-        <div className="flex items-center gap-3 px-6 py-5 border-b border-stone-800 bg-gradient-to-r from-red-950/40 to-transparent">
-          <div className="flex items-center justify-center w-9 h-9 rounded-lg bg-red-900/40 border border-red-800/40">
-            <FlaskConical className="w-4 h-4 text-red-400" strokeWidth={1.5} />
+        <div className="flex items-center gap-3 px-6 py-5 border-b border-slate-100 bg-slate-50">
+          <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-marine text-white shadow-sm">
+            <FlaskConical className="w-5 h-5 text-gold-light" strokeWidth={1.5} />
           </div>
           <div>
-            <h2 className="text-sm font-bold text-stone-100">
+            <h2 className="text-base font-bold text-marine">
               Obtención de muestra representativa
             </h2>
-            <p className="text-xs text-stone-500 mt-0.5">
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
               Procedimiento 3.1–3.5 · Marque cada paso al completarlo
             </p>
           </div>
@@ -68,36 +68,36 @@ export function PasoMuestra({ onNext, onPrev }: PasoMuestraProps) {
 
         <div className="px-6 py-6 flex flex-col gap-4">
           {/* Reference note */}
-          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-900/15 border border-amber-700/25">
-            <Info className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-stone-400 leading-relaxed">
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-200/60">
+            <Info className="w-4 h-4 text-amber-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-amber-900 leading-relaxed font-medium">
               Basado en el protocolo del{" "}
-              <span className="font-semibold text-amber-400">AWRI</span>{" "}
+              <span className="font-bold">AWRI</span>{" "}
               (Australian Wine Research Institute). Se utilizan{" "}
-              <span className="font-semibold text-stone-200">50 bayas</span> para la
+              <span className="font-bold">50 bayas</span> para la
               evaluación de madurez. Esta etapa garantiza que la muestra sea estadísticamente
               representativa del lote completo.
             </p>
           </div>
 
           {/* Progress bar */}
-          <div className="flex flex-col gap-1.5">
-            <div className="flex justify-between text-xs text-stone-500">
+          <div className="flex flex-col gap-1.5 mt-2">
+            <div className="flex justify-between text-xs text-slate-500 font-bold uppercase tracking-wider">
               <span>Pasos completados</span>
-              <span className="font-mono font-semibold text-stone-300">
+              <span className="font-mono text-marine">
                 {completedCount} / {PASOS_MUESTRA.length}
               </span>
             </div>
-            <div className="h-1.5 bg-stone-800 rounded-full overflow-hidden">
+            <div className="h-2 bg-slate-100 rounded-full overflow-hidden shadow-inner">
               <div
-                className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+                className="h-full bg-marine rounded-full transition-all duration-500"
                 style={{ width: `${(completedCount / PASOS_MUESTRA.length) * 100}%` }}
               />
             </div>
           </div>
 
           {/* Checklist */}
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-2.5 mt-4">
             {PASOS_MUESTRA.map((paso) => {
               const isChecked = !!checked[paso.id];
               return (
@@ -106,39 +106,39 @@ export function PasoMuestra({ onNext, onPrev }: PasoMuestraProps) {
                   onClick={() => toggle(paso.id)}
                   className={`flex items-start gap-4 p-4 rounded-xl border text-left transition-all duration-200 ${
                     isChecked
-                      ? "bg-emerald-900/20 border-emerald-700/40"
-                      : "bg-stone-800/40 border-stone-700/50 hover:border-stone-600 hover:bg-stone-800/70"
+                      ? "bg-slate-50 border-marine/20 shadow-sm"
+                      : "bg-white border-slate-200 hover:border-marine-light/40 hover:bg-slate-50/50"
                   }`}
                 >
                   <div className="flex-shrink-0 mt-0.5">
                     {isChecked ? (
-                      <CheckSquare className="w-5 h-5 text-emerald-400" />
+                      <CheckSquare className="w-5 h-5 text-marine" />
                     ) : (
-                      <Square className="w-5 h-5 text-stone-600" />
+                      <Square className="w-5 h-5 text-slate-300" />
                     )}
                   </div>
-                  <div className="flex flex-col gap-0.5 flex-1">
+                  <div className="flex flex-col gap-1 flex-1">
                     <div className="flex items-center gap-2">
                       <span
-                        className={`text-xs font-bold font-mono px-1.5 py-0.5 rounded ${
+                        className={`text-xs font-bold font-mono px-2 py-0.5 rounded-md ${
                           isChecked
-                            ? "bg-emerald-500/20 text-emerald-400"
-                            : "bg-stone-700 text-stone-400"
+                            ? "bg-marine/10 text-marine"
+                            : "bg-slate-100 text-slate-500"
                         }`}
                       >
                         {paso.id}
                       </span>
                     </div>
                     <p
-                      className={`text-sm leading-relaxed mt-1 ${
-                        isChecked ? "text-stone-300 line-through decoration-stone-500" : "text-stone-300"
+                      className={`text-sm leading-relaxed ${
+                        isChecked ? "text-slate-400 line-through decoration-slate-300" : "text-marine font-medium"
                       }`}
                     >
                       {paso.texto}
                     </p>
                   </div>
                   {isChecked && (
-                    <ChevronRight className="w-4 h-4 text-emerald-500 flex-shrink-0 mt-0.5" />
+                    <ChevronRight className="w-4 h-4 text-marine/40 flex-shrink-0 mt-0.5" />
                   )}
                 </button>
               );
@@ -147,9 +147,9 @@ export function PasoMuestra({ onNext, onPrev }: PasoMuestraProps) {
 
           {/* Final note */}
           {allChecked && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-900/20 border border-emerald-700/30 mt-1 animate-in fade-in duration-500">
-              <div className="w-2 h-2 rounded-full bg-emerald-400 flex-shrink-0" />
-              <p className="text-sm text-emerald-400 font-medium">
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 mt-2 animate-in fade-in duration-500">
+              <div className="w-2 h-2 rounded-full bg-emerald-500 flex-shrink-0" />
+              <p className="text-sm text-emerald-800 font-bold">
                 ✓ Muestra representativa obtenida. Puede proceder a la evaluación fisicoquímica.
               </p>
             </div>

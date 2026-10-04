@@ -44,7 +44,6 @@ export function Paso1Identificacion({ data, onChange, onNext }: Paso1Props) {
               placeholder="Ej. Viña Santa Rosa"
               value={data.proveedor}
               onChange={set("proveedor")}
-              hasError={data.proveedor === ""}
             />
           </FormField>
 
@@ -53,7 +52,6 @@ export function Paso1Identificacion({ data, onChange, onNext }: Paso1Props) {
               placeholder="Ej. Cuartel 4, Valle del Maipo"
               value={data.procedencia}
               onChange={set("procedencia")}
-              hasError={data.procedencia === ""}
             />
           </FormField>
 
@@ -62,7 +60,6 @@ export function Paso1Identificacion({ data, onChange, onNext }: Paso1Props) {
               type="date"
               value={data.fecha}
               onChange={set("fecha")}
-              hasError={data.fecha === ""}
             />
           </FormField>
 
@@ -71,23 +68,15 @@ export function Paso1Identificacion({ data, onChange, onNext }: Paso1Props) {
               type="time"
               value={data.hora}
               onChange={set("hora")}
-              hasError={data.hora === ""}
             />
           </FormField>
 
           <FormField label="Variedad de uva" required>
             <StyledSelect
+              options={VARIEDADES_UVA}
               value={data.variedad}
               onChange={set("variedad")}
-              hasError={data.variedad === ""}
-            >
-              <option value="">— Seleccione variedad —</option>
-              {VARIEDADES_UVA.map((v) => (
-                <option key={v} value={v}>
-                  {v}
-                </option>
-              ))}
-            </StyledSelect>
+            />
           </FormField>
 
           <FormField label="Peso neto del lote (kg)" required>
@@ -97,18 +86,15 @@ export function Paso1Identificacion({ data, onChange, onNext }: Paso1Props) {
               value={data.peso}
               onChange={set("peso")}
               min="0"
-              suffix="kg"
-              hasError={data.peso !== "" && parseFloat(data.peso) <= 0}
             />
           </FormField>
 
           <div className="sm:col-span-2">
-            <FormField label="Código de Lote" required hint="Se generará automáticamente si se deja en blanco">
+            <FormField label="Código de Lote" required>
               <StyledInput
                 placeholder="Ej. LOT-2024-011"
                 value={data.codigoLote}
                 onChange={set("codigoLote")}
-                hasError={data.codigoLote === ""}
               />
             </FormField>
           </div>

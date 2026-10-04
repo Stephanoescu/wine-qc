@@ -18,7 +18,6 @@ interface ProcedimientoCardProps {
   icon: React.ElementType;
   title: string;
   description: string;
-  accent: string;
   badge?: string;
   primary?: boolean;
   disabled?: boolean;
@@ -29,7 +28,6 @@ function ProcedimientoCard({
   icon: Icon,
   title,
   description,
-  accent,
   badge,
   primary,
   disabled,
@@ -38,34 +36,44 @@ function ProcedimientoCard({
     <div
       className={`group relative flex flex-col gap-5 p-7 rounded-2xl border transition-all duration-300 h-full ${
         disabled
-          ? "opacity-50 cursor-not-allowed bg-stone-900 border-stone-800"
+          ? "opacity-60 cursor-not-allowed bg-slate-100 border-slate-200"
           : primary
-          ? "bg-gradient-to-br from-red-950 to-stone-900 border-red-800/60 hover:border-red-700 hover:scale-[1.02] hover:shadow-2xl cursor-pointer"
-          : "bg-stone-900 border-stone-700/50 hover:border-stone-600 hover:bg-stone-800/80 hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+          ? "bg-marine text-white border-marine-light hover:border-gold hover:scale-[1.02] hover:shadow-[0_10px_30px_rgba(17,41,76,0.15)] cursor-pointer"
+          : "bg-white border-slate-200 hover:border-gold hover:scale-[1.02] hover:shadow-lg cursor-pointer"
       }`}
     >
       {badge && (
-        <span className="absolute top-4 right-4 text-xs font-bold px-2.5 py-1 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30">
+        <span className={`absolute top-4 right-4 text-xs font-bold px-2.5 py-1 rounded-full ${
+          primary ? "bg-gold text-white" : "bg-gold/15 text-gold-dark border border-gold/30"
+        }`}>
           {badge}
         </span>
       )}
-      <div className={`flex items-center justify-center w-14 h-14 rounded-xl border ${accent}`}>
+      <div className={`flex items-center justify-center w-14 h-14 rounded-xl border ${
+        disabled ? "bg-slate-200 border-slate-300 text-slate-400"
+        : primary ? "bg-marine-light border-marine-light/50 text-gold-light"
+        : "bg-slate-50 border-slate-200 text-marine group-hover:border-gold group-hover:text-gold group-hover:bg-gold/5"
+      } transition-colors`}>
         <Icon className="w-7 h-7" strokeWidth={1.5} />
       </div>
       <div className="flex flex-col gap-2 flex-1">
-        <h3 className={`text-lg font-bold leading-snug ${primary ? "text-red-100" : "text-stone-100"}`}>
+        <h3 className={`text-lg font-bold leading-snug ${disabled ? "text-slate-500" : primary ? "text-white" : "text-marine"}`}>
           {title}
         </h3>
-        <p className="text-sm text-stone-400 leading-relaxed">{description}</p>
+        <p className={`text-sm leading-relaxed ${disabled ? "text-slate-400" : primary ? "text-white/70" : "text-slate-500"}`}>
+          {description}
+        </p>
       </div>
       {!disabled && (
-        <div className="flex items-center gap-2 text-sm font-semibold text-red-400 group-hover:text-red-300 transition-colors mt-auto">
+        <div className={`flex items-center gap-2 text-sm font-semibold transition-colors mt-auto ${
+          primary ? "text-gold group-hover:text-gold-light" : "text-marine group-hover:text-gold"
+        }`}>
           Iniciar
           <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
         </div>
       )}
       {disabled && (
-        <p className="text-xs text-stone-600 mt-auto">Próximamente</p>
+        <p className="text-xs text-slate-400 mt-auto font-medium">Próximamente</p>
       )}
     </div>
   );
@@ -76,57 +84,56 @@ function ProcedimientoCard({
 
 export default function InicioPage() {
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
-      <header className="border-b border-stone-800 bg-stone-950/80 backdrop-blur-sm sticky top-0 z-10">
+      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-red-900/40 border border-red-800/50">
-              <Wine className="w-5 h-5 text-red-400" strokeWidth={1.5} />
+            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-marine text-gold border border-marine-light">
+              <Wine className="w-5 h-5" strokeWidth={1.5} />
             </div>
             <div>
-              <p className="text-base font-bold text-stone-100 leading-none">Bodega Control</p>
-              <p className="text-xs text-stone-500 mt-0.5">Sistema de Calidad Vitivinícola</p>
+              <p className="text-base font-bold text-marine leading-none">Bodega Control</p>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">Sistema de Calidad Vitivinícola</p>
             </div>
           </div>
           <Link
             href="/reportes"
-            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-stone-700 text-sm text-stone-400 hover:bg-stone-800 hover:text-stone-200 transition-colors"
+            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm text-marine font-medium hover:bg-slate-50 hover:border-marine/20 transition-colors"
           >
-            <BarChart3 className="w-4 h-4" />
+            <BarChart3 className="w-4 h-4 text-marine-light" />
             Ver reportes
           </Link>
         </div>
       </header>
 
       {/* Hero text */}
-      <div className="max-w-5xl mx-auto px-6 py-10 flex flex-col gap-3">
+      <div className="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-3">
         <div className="flex items-center gap-2 mb-1">
-          <div className="w-1 h-5 rounded-full bg-red-700" />
-          <span className="text-xs font-semibold tracking-widest text-red-400 uppercase">
+          <div className="w-1 h-5 rounded-full bg-gold" />
+          <span className="text-xs font-bold tracking-widest text-gold-dark uppercase">
             Procedimientos disponibles
           </span>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-stone-100 leading-tight">
+        <h1 className="text-3xl sm:text-4xl font-extrabold text-marine leading-tight">
           ¿Qué procedimiento{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-rose-500">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-marine to-marine-light">
             deseas iniciar?
           </span>
         </h1>
-        <p className="text-stone-400 max-w-lg leading-relaxed">
-          Selecciona el módulo de trabajo. Todos los registros se guardan automáticamente en el sistema.
+        <p className="text-slate-600 max-w-lg leading-relaxed font-medium">
+          Selecciona el módulo de trabajo. Todos los registros se guardan automáticamente en el sistema central.
         </p>
       </div>
 
       {/* Cards */}
-      <div className="max-w-5xl mx-auto px-6 pb-12 flex-1">
+      <div className="max-w-5xl mx-auto px-6 pb-12 flex-1 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <ProcedimientoCard
             href="/recepcion"
             icon={ClipboardList}
             title="Recepción y Evaluación de Uva"
             description="Identificación, inspección visual y evaluación fisicoquímica de cada lote ingresado a bodega. Clasificación Poka-Yoke."
-            accent="bg-red-900/30 border-red-800/50 text-red-400"
             badge="Principal"
             primary
           />
@@ -135,14 +142,12 @@ export default function InicioPage() {
             icon={BarChart3}
             title="Dashboard de Reportes"
             description="Resumen de lotes evaluados, KPIs de conformidad y distribución histórica por categorías A, B y C."
-            accent="bg-amber-900/20 border-amber-800/40 text-amber-400"
           />
           <ProcedimientoCard
             href="/control-estadistico"
             icon={Activity}
             title="Control Estadístico"
             description="Gráficos de control SPC, cartas de control X̄-R y análisis de tendencias de los parámetros fisicoquímicos."
-            accent="bg-rose-900/20 border-rose-800/40 text-rose-400"
             disabled
           />
           <ProcedimientoCard
@@ -150,7 +155,6 @@ export default function InicioPage() {
             icon={Shield}
             title="Control de Proceso"
             description="Monitoreo de parámetros durante la fermentación y crianza."
-            accent="bg-emerald-900/20 border-emerald-800/40 text-emerald-400"
             disabled
           />
           <ProcedimientoCard
@@ -158,7 +162,6 @@ export default function InicioPage() {
             icon={Leaf}
             title="Trazabilidad de Lotes"
             description="Seguimiento completo del recorrido de cada lote desde la viña hasta el embotellado."
-            accent="bg-stone-800 border-stone-700 text-stone-400"
             disabled
           />
           <ProcedimientoCard
@@ -166,22 +169,21 @@ export default function InicioPage() {
             icon={Thermometer}
             title="Control de Temperatura"
             description="Registro y alertas de temperatura en depósitos de almacenamiento y sala de barricas."
-            accent="bg-stone-800 border-stone-700 text-stone-400"
             disabled
           />
         </div>
 
         {/* Stats footer */}
-        <div className="mt-10 flex flex-wrap gap-0 divide-x divide-stone-800 rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden">
+        <div className="mt-12 flex flex-wrap gap-0 divide-x divide-slate-200 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           {[
             { label: "Parámetros monitoreados", value: "7" },
             { label: "Categorías de clasificación", value: "A · B · C" },
-            { label: "Límites Poka-Yoke activos", value: "5 visual + 2 fisico" },
+            { label: "Límites Poka-Yoke", value: "5 visual + 2 fisico" },
             { label: "Norma de referencia", value: "AWRI" },
           ].map((s) => (
             <div key={s.label} className="flex-1 min-w-[140px] px-6 py-5">
-              <p className="text-lg font-bold text-amber-400 font-mono">{s.value}</p>
-              <p className="text-xs text-stone-500 mt-1">{s.label}</p>
+              <p className="text-lg font-bold text-marine font-mono">{s.value}</p>
+              <p className="text-xs text-slate-500 mt-1 font-medium">{s.label}</p>
             </div>
           ))}
         </div>

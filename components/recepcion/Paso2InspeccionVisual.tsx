@@ -56,33 +56,33 @@ function DefectoRow({
   }
 
   const cfg = {
-    empty:         { border: "border-stone-700",    bg: "bg-stone-800/40",    dot: "bg-stone-700",   text: "text-stone-500",   label: "" },
-    conforme:      { border: "border-emerald-700/40", bg: "bg-emerald-900/15", dot: "bg-emerald-500", text: "text-emerald-400", label: "Conforme" },
-    observado:     { border: "border-amber-600/40",   bg: "bg-amber-900/15",   dot: "bg-amber-500",   text: "text-amber-400",   label: "Observado" },
-    "no-conforme": { border: "border-red-600/50",     bg: "bg-red-900/20",     dot: "bg-red-500",     text: "text-red-400",     label: "No conforme - Revisar" },
+    empty:         { border: "border-slate-200",    bg: "bg-white",         dot: "bg-slate-300",  text: "text-slate-500", label: "" },
+    conforme:      { border: "border-emerald-200",  bg: "bg-emerald-50/50", dot: "bg-emerald-500", text: "text-emerald-700", label: "Conforme" },
+    observado:     { border: "border-amber-200",    bg: "bg-amber-50/50",   dot: "bg-amber-500",  text: "text-amber-700",   label: "Observado" },
+    "no-conforme": { border: "border-red-300",      bg: "bg-red-50/80",     dot: "bg-red-500",    text: "text-red-700",     label: "No conforme - Revisar" },
   }[status];
 
   return (
     <div className={`rounded-xl border transition-all p-4 ${cfg.border} ${cfg.bg}`}>
-      <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Label + limits */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-            <span className="text-sm font-medium text-stone-200">{label}</span>
+            <span className="text-sm font-bold text-marine">{label}</span>
           </div>
-          <p className="text-xs text-stone-500 mt-1 ml-4">
+          <p className="text-xs text-slate-500 mt-1 ml-4 font-medium">
             {limiteObs !== undefined
-              ? `Conforme ≤ ${limiteObs}% · Observado ${limiteObs}–${limiteMax}% · No conforme > ${limiteMax}%`
+              ? `Conforme ≤ ${limiteObs}% · Observado ${limiteObs}–${limiteMax}% · NC > ${limiteMax}%`
               : `Límite máximo: ≤ ${limiteMax}%`}
           </p>
         </div>
 
         {/* Weight input */}
-        <div className="flex items-center gap-3 flex-shrink-0">
+        <div className="flex items-center gap-4 flex-shrink-0">
           <div className="flex flex-col items-end gap-1">
-            <div className={`flex items-center rounded-xl border overflow-hidden bg-stone-900/60 ${
-              status === "no-conforme" ? "border-red-500/70" : "border-stone-700 focus-within:border-red-700/60"
+            <div className={`flex items-center rounded-xl border bg-white shadow-sm overflow-hidden transition-colors ${
+              status === "no-conforme" ? "border-red-400 focus-within:ring-red-400" : "border-slate-300 focus-within:border-marine focus-within:ring-1 focus-within:ring-marine"
             }`}>
               <input
                 type="number"
@@ -91,15 +91,15 @@ function DefectoRow({
                 placeholder="0.00"
                 value={valueKg}
                 onChange={(e) => onChange(e.target.value)}
-                className="w-24 bg-transparent px-3 py-2.5 text-sm text-stone-100 placeholder:text-stone-600 outline-none text-right"
+                className={`w-24 bg-transparent px-3 py-2.5 text-sm text-marine placeholder:text-slate-400 outline-none text-right font-medium`}
               />
-              <span className="pr-3 text-xs text-stone-500 font-mono">kg</span>
+              <span className="pr-3 text-xs text-slate-400 font-bold">kg</span>
             </div>
             {/* Auto-calculated % */}
             {hasValue && (
-              <span className={`text-xs font-mono font-semibold ${
-                status === "conforme" ? "text-emerald-400" :
-                status === "observado" ? "text-amber-400" : "text-red-400"
+              <span className={`text-xs font-mono font-bold ${
+                status === "conforme" ? "text-emerald-600" :
+                status === "observado" ? "text-amber-600" : "text-red-600"
               }`}>
                 = {pct!.toFixed(2)}%
               </span>
@@ -108,11 +108,11 @@ function DefectoRow({
 
           {/* Status badge */}
           {hasValue && (
-            <div className="flex items-center gap-1.5 min-w-[140px]">
-              {status === "conforme" && <CheckCircle2 className="w-4 h-4 text-emerald-500 flex-shrink-0" />}
-              {status === "observado" && <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0" />}
-              {status === "no-conforme" && <XCircle className="w-4 h-4 text-red-500 flex-shrink-0" />}
-              <span className={`text-xs font-semibold ${cfg.text}`}>{cfg.label}</span>
+            <div className="flex items-center justify-end gap-1.5 min-w-[140px]">
+              {status === "conforme" && <CheckCircle2 className="w-4 h-4 text-emerald-600 flex-shrink-0" />}
+              {status === "observado" && <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />}
+              {status === "no-conforme" && <XCircle className="w-4 h-4 text-red-600 flex-shrink-0" />}
+              <span className={`text-xs font-bold ${cfg.text}`}>{cfg.label}</span>
             </div>
           )}
         </div>
@@ -143,18 +143,6 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
   const set = (field: keyof InspeccionVisualData) => (v: string) =>
     onChange({ ...data, [field]: v });
 
-  // Count how many parameters are non-conforming (for summary feedback)
-  const ncCount = [
-    { v: data.podredumbre, max: LIMITES_VISUAL.podredumbre.max },
-    { v: data.bayasDaniadas, max: LIMITES_VISUAL.bayasDaniadas.max },
-    { v: data.deshidratacion, max: LIMITES_VISUAL.deshidratacion.max },
-    { v: data.materiaExtrana, max: LIMITES_VISUAL.materiaExtrana.max },
-    { v: data.bayasVerdes, max: LIMITES_VISUAL.bayasVerdes.observadoMax },
-  ].filter(({ v }) => {
-    const pct = pctFromKg(v, pesoNeto);
-    return pct !== null && pct > LIMITES_VISUAL.podredumbre.max; // placeholder, recalculated below
-  });
-
   // Recalculate correctly
   const noConformeCount = (() => {
     let count = 0;
@@ -181,10 +169,10 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
       >
         <div className="flex flex-col gap-4">
           {/* Info banner */}
-          <div className="flex items-start gap-2.5 p-3.5 rounded-xl bg-stone-800/40 border border-stone-700/40">
-            <Info className="w-4 h-4 text-amber-400 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-stone-400 leading-relaxed">
-              <span className="font-semibold text-stone-300">Poka-Yoke:</span>{" "}
+          <div className="flex items-start gap-3 p-4 rounded-xl bg-slate-50 border border-slate-200 shadow-sm">
+            <Info className="w-4 h-4 text-marine mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-slate-600 leading-relaxed font-medium">
+              <span className="font-bold text-marine">Poka-Yoke:</span>{" "}
               Ingrese el peso en kg de cada defecto. El sistema calculará el porcentaje
               automáticamente en base al peso neto del lote ({pesoNeto > 0 ? `${pesoNeto.toLocaleString()} kg` : "definido en el Paso 1"}) y
               señalará si supera los límites establecidos.
@@ -230,28 +218,28 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
 
           {/* Summary feedback */}
           {hasSomeValue && noConformeCount > 0 && (
-            <div className={`flex items-start gap-3 p-4 rounded-xl border ${
+            <div className={`flex items-start gap-3 p-4 rounded-xl border shadow-sm ${
               noConformeCount >= 3
-                ? "bg-red-900/20 border-red-700/40"
-                : "bg-amber-900/15 border-amber-600/40"
+                ? "bg-red-50 border-red-200"
+                : "bg-amber-50 border-amber-200"
             }`}>
-              <AlertTriangle className={`w-4 h-4 flex-shrink-0 mt-0.5 ${noConformeCount >= 3 ? "text-red-400" : "text-amber-400"}`} />
+              <AlertTriangle className={`w-5 h-5 flex-shrink-0 mt-0.5 ${noConformeCount >= 3 ? "text-red-600" : "text-amber-600"}`} />
               <div>
-                <p className={`text-sm font-semibold ${noConformeCount >= 3 ? "text-red-300" : "text-amber-300"}`}>
+                <p className={`text-sm font-bold ${noConformeCount >= 3 ? "text-red-800" : "text-amber-800"}`}>
                   {noConformeCount >= 3
                     ? `${noConformeCount} parámetros fuera de rango → Categoría C (No liberado)`
                     : `${noConformeCount} parámetro${noConformeCount > 1 ? "s" : ""} fuera de rango → Categoría B (Observado)`}
                 </p>
-                <p className="text-xs text-stone-500 mt-0.5">
+                <p className="text-xs text-slate-600 mt-1 font-medium">
                   El resultado final se determinará al completar todos los pasos.
                 </p>
               </div>
             </div>
           )}
           {hasSomeValue && noConformeCount === 0 && (
-            <div className="flex items-center gap-3 p-3 rounded-xl bg-emerald-900/15 border border-emerald-700/30">
-              <CheckCircle2 className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-              <p className="text-sm text-emerald-400">Todos los parámetros visuales dentro del rango aceptable.</p>
+            <div className="flex items-center gap-3 p-4 rounded-xl bg-emerald-50 border border-emerald-200 shadow-sm">
+              <CheckCircle2 className="w-5 h-5 text-emerald-600 flex-shrink-0" />
+              <p className="text-sm font-bold text-emerald-800">Todos los parámetros visuales dentro del rango aceptable.</p>
             </div>
           )}
         </div>

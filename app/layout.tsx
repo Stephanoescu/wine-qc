@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Bodega Control — Sistema de Calidad Vitivinícola",
-  description:
-    "Sistema de control estadístico de calidad para recepción, clasificación y segregación de uva en bodega",
+  title: "Bodega Control | Poka-Yoke",
+  description: "Sistema de Control de Calidad y Recepción de Uva",
 };
 
 export default function RootLayout({
@@ -25,9 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased bg-stone-950 text-stone-100 min-h-screen`}
-      >
+      <body className={`${inter.className} bg-slate-50 text-marine min-h-screen antialiased selection:bg-gold/30 selection:text-marine-dark`}>
         {children}
       </body>
     </html>

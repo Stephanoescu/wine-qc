@@ -52,20 +52,24 @@ function ReadingInputs({ label, values, onChange, unit, rangeLabel }: ReadingInp
   return (
     <div className="flex flex-col gap-3">
       <div className="flex items-center justify-between">
-        <span className="text-sm font-semibold text-stone-200">{label}</span>
-        <span className="text-xs text-stone-500">{rangeLabel}</span>
+        <span className="text-sm font-bold text-marine">{label}</span>
+        <span className="text-xs font-medium text-slate-500">{rangeLabel}</span>
       </div>
       <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
         {values.map((v, i) => (
           <FormField key={i} label={`Lectura ${i + 1}`}>
-            <StyledInput
-              type="number"
-              step="0.01"
-              placeholder="0.00"
-              value={v}
-              onChange={(e) => onChange(i, e.target.value)}
-              suffix={unit}
-            />
+            <div className="relative">
+              <StyledInput
+                type="number"
+                step="0.01"
+                placeholder="0.00"
+                value={v}
+                onChange={(e) => onChange(i, e.target.value)}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-400 pointer-events-none">
+                {unit}
+              </span>
+            </div>
           </FormField>
         ))}
       </div>
@@ -112,22 +116,22 @@ export function Paso3Fisicoquimica({ data, onChange, onNext, onPrev }: Paso3Prop
               unit="°Bx"
               rangeLabel={`Rango ideal: ${LIMITES_FISICOQUIMICA.brix.min} – ${LIMITES_FISICOQUIMICA.brix.max} °Brix`}
             />
-            <div className="mt-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-px h-4 bg-stone-600" />
-                <span className="text-xs text-stone-500 uppercase tracking-wider font-semibold">Promedio calculado</span>
+            {brixProm !== null && (
+              <div className="mt-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1 h-4 bg-marine rounded-full" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio calculado</span>
+                </div>
+                <ValueIndicator
+                  value={brixProm}
+                  min={LIMITES_FISICOQUIMICA.brix.min}
+                  max={LIMITES_FISICOQUIMICA.brix.max}
+                />
               </div>
-              <ValueIndicator
-                value={brixProm}
-                min={LIMITES_FISICOQUIMICA.brix.min}
-                max={LIMITES_FISICOQUIMICA.brix.max}
-                label="Promedio °Brix = (B1 + B2 + B3) / 3"
-                unit=" °Bx"
-              />
-            </div>
+            )}
           </div>
 
-          <div className="border-t border-stone-800" />
+          <div className="border-t border-slate-100" />
 
           {/* pH section */}
           <div className="flex flex-col gap-4">
@@ -138,19 +142,19 @@ export function Paso3Fisicoquimica({ data, onChange, onNext, onPrev }: Paso3Prop
               unit="pH"
               rangeLabel={`Rango ideal: ${LIMITES_FISICOQUIMICA.ph.min} – ${LIMITES_FISICOQUIMICA.ph.max}`}
             />
-            <div className="mt-1">
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-px h-4 bg-stone-600" />
-                <span className="text-xs text-stone-500 uppercase tracking-wider font-semibold">Promedio calculado</span>
+            {phProm !== null && (
+              <div className="mt-1">
+                <div className="flex items-center gap-2 mb-2">
+                  <div className="w-1 h-4 bg-marine rounded-full" />
+                  <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio calculado</span>
+                </div>
+                <ValueIndicator
+                  value={phProm}
+                  min={LIMITES_FISICOQUIMICA.ph.min}
+                  max={LIMITES_FISICOQUIMICA.ph.max}
+                />
               </div>
-              <ValueIndicator
-                value={phProm}
-                min={LIMITES_FISICOQUIMICA.ph.min}
-                max={LIMITES_FISICOQUIMICA.ph.max}
-                label="Promedio pH = (pH1 + pH2) / 2"
-                unit=" pH"
-              />
-            </div>
+            )}
           </div>
         </div>
       </SectionCard>

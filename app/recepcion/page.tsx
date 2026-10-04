@@ -85,24 +85,24 @@ export default function RecepcionPage() {
   }
 
   return (
-    <div className="min-h-screen bg-stone-950 flex flex-col">
+    <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Top bar */}
-      <header className="sticky top-0 z-10 border-b border-stone-800 bg-stone-950/90 backdrop-blur-sm">
+      <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur-md shadow-sm">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 py-4 flex items-center gap-4">
           <Link
             href="/inicio"
-            className="flex items-center gap-1.5 text-stone-500 hover:text-stone-300 transition-colors text-sm"
+            className="flex items-center gap-1.5 text-slate-500 hover:text-marine transition-colors text-sm font-medium"
           >
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Inicio</span>
           </Link>
-          <div className="flex items-center gap-2 flex-1">
-            <Wine className="w-4 h-4 text-red-500 flex-shrink-0" />
-            <span className="text-sm font-bold text-stone-200 truncate">
+          <div className="flex items-center gap-2 flex-1 justify-center sm:justify-start">
+            <Wine className="w-4 h-4 text-gold-dark flex-shrink-0" />
+            <span className="text-sm font-bold text-marine truncate">
               Recepción y Evaluación de Uva
             </span>
           </div>
-          <span className="text-xs text-stone-600 font-mono flex-shrink-0">
+          <span className="text-xs text-slate-500 font-mono font-medium flex-shrink-0 bg-slate-100 px-2.5 py-1 rounded-md">
             Paso {step}/{STEPS.length}
           </span>
         </div>

@@ -47,10 +47,10 @@ const CAT_CONFIG: Record<
   A: {
     label: "Categoría A",
     sublabel: "Conforme — Liberado para proceso",
-    border: "border-emerald-600/40",
-    bg: "from-emerald-950/60 to-stone-900",
-    iconBg: "bg-emerald-600/20 border-emerald-600/40",
-    textColor: "text-emerald-400",
+    border: "border-emerald-200",
+    bg: "bg-gradient-to-br from-emerald-50 to-white",
+    iconBg: "bg-emerald-100 border-emerald-200",
+    textColor: "text-emerald-700",
     accentBar: "bg-emerald-500",
     Icon: CheckCircle2,
     action: "Lote aprobado. Proceder al descargue y procesamiento.",
@@ -58,10 +58,10 @@ const CAT_CONFIG: Record<
   B: {
     label: "Categoría B",
     sublabel: "Observado — Segregar para evaluación adicional",
-    border: "border-amber-500/40",
-    bg: "from-amber-950/40 to-stone-900",
-    iconBg: "bg-amber-500/20 border-amber-500/40",
-    textColor: "text-amber-400",
+    border: "border-amber-200",
+    bg: "bg-gradient-to-br from-amber-50 to-white",
+    iconBg: "bg-amber-100 border-amber-200",
+    textColor: "text-amber-700",
     accentBar: "bg-amber-500",
     Icon: AlertTriangle,
     action: "Segregar lote. Informar al enólogo. Evaluar si puede ser procesado con restricciones.",
@@ -69,11 +69,11 @@ const CAT_CONFIG: Record<
   C: {
     label: "Categoría C",
     sublabel: "No liberado — Rechazar o devolver",
-    border: "border-red-600/40",
-    bg: "from-red-950/40 to-stone-900",
-    iconBg: "bg-red-600/20 border-red-600/40",
-    textColor: "text-red-400",
-    accentBar: "bg-red-600",
+    border: "border-red-200",
+    bg: "bg-gradient-to-br from-red-50 to-white",
+    iconBg: "bg-red-100 border-red-200",
+    textColor: "text-red-700",
+    accentBar: "bg-red-500",
     Icon: XCircle,
     action: "Rechazar lote. No procesar. Notificar al proveedor y documentar la no conformidad.",
   },
@@ -83,20 +83,20 @@ const CAT_CONFIG: Record<
 function ClasificacionReglas({ noConformeVisualCount }: { noConformeVisualCount: number }) {
   return (
     <div className="flex flex-col gap-1.5">
-      <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider mb-1">
+      <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">
         Criterios de clasificación visual
       </p>
       {[
-        { rango: "0 parámetros NC", cat: "A", color: "text-emerald-400 bg-emerald-900/20 border-emerald-700/30", active: noConformeVisualCount === 0 },
-        { rango: "1–2 parámetros NC", cat: "B", color: "text-amber-400 bg-amber-900/20 border-amber-700/30", active: noConformeVisualCount === 1 || noConformeVisualCount === 2 },
-        { rango: "3 o más parámetros NC", cat: "C", color: "text-red-400 bg-red-900/20 border-red-700/30", active: noConformeVisualCount >= 3 },
+        { rango: "0 parámetros NC", cat: "A", color: "text-emerald-800 bg-emerald-100 border-emerald-200 font-bold", active: noConformeVisualCount === 0 },
+        { rango: "1–2 parámetros NC", cat: "B", color: "text-amber-800 bg-amber-100 border-amber-200 font-bold", active: noConformeVisualCount === 1 || noConformeVisualCount === 2 },
+        { rango: "3 o más parámetros NC", cat: "C", color: "text-red-800 bg-red-100 border-red-200 font-bold", active: noConformeVisualCount >= 3 },
       ].map((r) => (
         <div
           key={r.rango}
-          className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs ${r.active ? r.color : "text-stone-600 bg-stone-800/30 border-stone-700/20"}`}
+          className={`flex items-center justify-between px-3 py-2 rounded-lg border text-xs shadow-sm ${r.active ? r.color : "text-slate-500 bg-slate-50 border-slate-200"}`}
         >
           <span>{r.rango}</span>
-          <span className={`font-bold ${r.active ? "" : "text-stone-700"}`}>→ Cat. {r.cat}</span>
+          <span className={`font-bold ${r.active ? "" : "text-slate-400"}`}>→ Cat. {r.cat}</span>
           {r.active && <div className="w-1.5 h-1.5 rounded-full bg-current ml-1" />}
         </div>
       ))}
@@ -106,9 +106,9 @@ function ClasificacionReglas({ noConformeVisualCount }: { noConformeVisualCount:
 
 function SummaryItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center justify-between py-2 border-b border-stone-800/60 last:border-0">
-      <span className="text-xs text-stone-500">{label}</span>
-      <span className="text-sm font-medium text-stone-200 text-right max-w-[60%]">{value}</span>
+    <div className="flex items-center justify-between py-2 border-b border-slate-100 last:border-0">
+      <span className="text-xs text-slate-500 font-bold uppercase tracking-wider">{label}</span>
+      <span className="text-sm font-semibold text-marine text-right max-w-[60%]">{value}</span>
     </div>
   );
 }
@@ -170,19 +170,19 @@ export function Paso4DecisionFinal({
   if (saved) {
     return (
       <div className="flex flex-col items-center justify-center gap-6 py-16 text-center">
-        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-600/15 border border-emerald-600/30">
-          <Save className="w-10 h-10 text-emerald-400" strokeWidth={1.5} />
+        <div className="flex items-center justify-center w-20 h-20 rounded-full bg-emerald-100 border border-emerald-200">
+          <Save className="w-10 h-10 text-emerald-600" strokeWidth={1.5} />
         </div>
         <div>
-          <h2 className="text-2xl font-bold text-stone-100">Lote guardado exitosamente</h2>
-          <p className="text-stone-400 mt-2">
+          <h2 className="text-2xl font-black text-marine">Lote guardado exitosamente</h2>
+          <p className="text-slate-500 mt-2 font-medium">
             El lote{" "}
-            <span className="font-mono text-amber-400">{identificacion.codigoLote}</span> fue
+            <span className="font-mono text-marine font-bold">{identificacion.codigoLote}</span> fue
             registrado como{" "}
-            <span className={`font-bold ${cfg?.textColor}`}>Categoría {categoria}</span>.
+            <span className={`font-black ${cfg?.textColor}`}>Categoría {categoria}</span>.
           </p>
         </div>
-        <p className="text-xs text-stone-600">El formulario se reiniciará en unos segundos...</p>
+        <p className="text-xs text-slate-400 font-medium">El formulario se reiniciará en unos segundos...</p>
       </div>
     );
   }
@@ -191,39 +191,39 @@ export function Paso4DecisionFinal({
     <div className="flex flex-col gap-6">
       {/* Category result */}
       {cfg && (
-        <div className={`relative rounded-2xl border bg-gradient-to-br ${cfg.bg} ${cfg.border} overflow-hidden`}>
-          <div className={`absolute top-0 left-0 right-0 h-1 ${cfg.accentBar}`} />
+        <div className={`relative rounded-2xl border ${cfg.bg} ${cfg.border} overflow-hidden shadow-sm`}>
+          <div className={`absolute top-0 left-0 right-0 h-1.5 ${cfg.accentBar}`} />
           <div className="p-7 flex flex-col gap-5 mt-1">
             {/* Icon + title */}
             <div className="flex items-center gap-4">
-              <div className={`flex items-center justify-center w-14 h-14 rounded-2xl border ${cfg.iconBg}`}>
+              <div className={`flex items-center justify-center w-14 h-14 rounded-2xl border shadow-sm ${cfg.iconBg}`}>
                 <CatIcon className={`w-7 h-7 ${cfg.textColor}`} strokeWidth={1.5} />
               </div>
               <div>
                 <div className="flex items-center gap-2">
                   <Award className={`w-4 h-4 ${cfg.textColor}`} />
-                  <h2 className={`text-xl font-extrabold ${cfg.textColor}`}>{cfg.label}</h2>
+                  <h2 className={`text-xl font-black tracking-tight ${cfg.textColor}`}>{cfg.label}</h2>
                 </div>
-                <p className="text-sm text-stone-400 mt-0.5">{cfg.sublabel}</p>
+                <p className="text-sm text-slate-600 font-medium mt-0.5">{cfg.sublabel}</p>
               </div>
             </div>
 
             {/* Action */}
-            <div className={`flex items-start gap-2 p-4 rounded-xl border ${cfg.border} bg-stone-900/40`}>
-              <ChevronRight className={`w-4 h-4 mt-0.5 flex-shrink-0 ${cfg.textColor}`} />
-              <p className="text-sm text-stone-300">{cfg.action}</p>
+            <div className={`flex items-start gap-2 p-4 rounded-xl border bg-white shadow-sm ${cfg.border}`}>
+              <ChevronRight className={`w-5 h-5 mt-0 flex-shrink-0 ${cfg.textColor}`} />
+              <p className="text-sm text-marine font-bold">{cfg.action}</p>
             </div>
 
             {/* Observations */}
             {observaciones.length > 0 && (
               <div className="flex flex-col gap-2">
-                <p className="text-xs font-semibold text-stone-500 uppercase tracking-wider">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                   Parámetros fuera de rango detectados ({observaciones.length})
                 </p>
-                <ul className="flex flex-col gap-1.5">
+                <ul className="flex flex-col gap-2">
                   {observaciones.map((obs, i) => (
-                    <li key={i} className="flex items-start gap-2 text-sm text-stone-400">
-                      <span className={`mt-1 w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.accentBar}`} />
+                    <li key={i} className="flex items-start gap-2 text-sm text-slate-600 font-medium bg-white p-3 rounded-lg border border-slate-100 shadow-sm">
+                      <span className={`mt-1.5 w-1.5 h-1.5 rounded-full flex-shrink-0 ${cfg.accentBar}`} />
                       {obs}
                     </li>
                   ))}
@@ -231,8 +231,8 @@ export function Paso4DecisionFinal({
               </div>
             )}
             {observaciones.length === 0 && (
-              <p className="text-sm text-emerald-400 flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4" />
+              <p className="text-sm text-emerald-700 font-bold flex items-center gap-2">
+                <CheckCircle2 className="w-5 h-5" />
                 Todos los parámetros dentro del rango aceptable.
               </p>
             )}
@@ -244,11 +244,11 @@ export function Paso4DecisionFinal({
       )}
 
       {/* Summary */}
-      <div className="rounded-2xl border border-stone-800 bg-stone-900 overflow-hidden">
-        <div className="px-5 py-4 border-b border-stone-800">
-          <h3 className="text-sm font-semibold text-stone-300">Resumen del lote</h3>
+      <div className="rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
+        <div className="px-6 py-5 border-b border-slate-100 bg-slate-50">
+          <h3 className="text-sm font-bold text-marine">Resumen del lote</h3>
         </div>
-        <div className="px-5 py-4">
+        <div className="px-6 py-4">
           <SummaryItem label="Código de lote" value={identificacion.codigoLote} />
           <SummaryItem label="Proveedor" value={identificacion.proveedor} />
           <SummaryItem label="Procedencia" value={identificacion.procedencia} />
@@ -263,11 +263,11 @@ export function Paso4DecisionFinal({
 
       {/* API error */}
       {apiError && (
-        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-900/20 border border-red-700/40">
-          <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="flex items-start gap-3 p-4 rounded-xl bg-red-50 border border-red-200">
+          <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
           <div>
-            <p className="text-sm font-semibold text-red-300">Error al guardar</p>
-            <p className="text-sm text-red-400 mt-0.5">{apiError}</p>
+            <p className="text-sm font-bold text-red-800">Error al guardar</p>
+            <p className="text-sm text-red-600 mt-0.5 font-medium">{apiError}</p>
           </div>
         </div>
       )}
@@ -281,8 +281,8 @@ export function Paso4DecisionFinal({
         disabledNext={saving}
       />
       {saving && (
-        <div className="flex items-center justify-center gap-2 text-sm text-stone-500">
-          <Loader2 className="w-4 h-4 animate-spin" />
+        <div className="flex items-center justify-center gap-2 text-sm font-bold text-marine">
+          <Loader2 className="w-4 h-4 animate-spin text-gold" />
           Guardando en el sistema...
         </div>
       )}

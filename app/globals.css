@@ -1,47 +1,44 @@
 @import "tailwindcss";
 
-/* ─── Always dark theme ─── */
-:root {
-  color-scheme: dark;
+@theme {
+  --color-marine: #11294C;
+  --color-marine-light: #1A3D73;
+  --color-marine-dark: #0A1930;
+  --color-gold: #9C8E65;
+  --color-gold-light: #B5A679;
+  --color-gold-dark: #827652;
 }
 
-body {
-  background-color: #09090b; /* zinc-950 */
-  color: #f4f4f5;           /* zinc-100 */
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+@custom-variant dark (&:is(.dark *));
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
 }
 
-/* ─── Smooth scrolling ─── */
-html {
-  scroll-behavior: smooth;
-}
-
-/* ─── Custom scrollbar for dark theme ─── */
+/* Custom scrollbar for marine theme */
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
-
 ::-webkit-scrollbar-track {
-  background: #18181b;
+  background: #F8F9FA;
 }
-
 ::-webkit-scrollbar-thumb {
-  background: #3f3f46;
-  border-radius: 3px;
+  background: #CBD5E1;
+  border-radius: 4px;
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: #52525b;
+  background: #94A3B8;
 }
 
-/* ─── Remove number input arrows ─── */
-input[type=number]::-webkit-inner-spin-button,
-input[type=number]::-webkit-outer-spin-button {
+/* Hide number input spinners */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
   -webkit-appearance: none;
   margin: 0;
 }
-input[type=number] {
+input[type="number"] {
   -moz-appearance: textfield;
 }
