@@ -12,27 +12,19 @@ interface PasoMuestraProps {
 const PASOS_MUESTRA = [
   {
     id: "3.1",
-    texto:
-      "Seleccionar bayas de diferentes sectores del recipiente o lote recibido: superficie, zona media, zonas laterales y distintas posiciones accesibles.",
+    texto: "Seleccionar bayas de diferentes sectores del recipiente o lote recibido: superficie, zona media, zonas laterales y distintas posiciones accesibles. (Evitar seleccionar únicamente las bayas visualmente mejores o peores.)",
   },
   {
     id: "3.2",
-    texto:
-      "Evitar seleccionar únicamente las bayas visualmente mejores o peores. La muestra debe ser representativa del lote completo.",
+    texto: "Reunir las bayas seleccionadas en un recipiente limpio para formar una muestra compuesta.",
   },
   {
     id: "3.3",
-    texto:
-      "Reunir las bayas seleccionadas en un recipiente limpio para formar una muestra compuesta.",
+    texto: "Mezclar cuidadosamente la muestra.",
   },
   {
     id: "3.4",
-    texto: "Mezclar cuidadosamente la muestra antes de proceder al análisis.",
-  },
-  {
-    id: "3.5",
-    texto:
-      "Extraer aleatoriamente 50 bayas para los análisis fisicoquímicos (referencia AWRI — Australian Wine Research Institute).",
+    texto: "Extraer aleatoriamente la cantidad establecida para los análisis.",
   },
 ];
 

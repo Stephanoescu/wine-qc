@@ -99,62 +99,120 @@ export function Paso3Fisicoquimica({ data, onChange, onNext, onPrev }: Paso3Prop
     onChange(next);
   };
 
+  const pasosBrix = [
+    "Calibrar el refractómetro siguiendo las instrucciones del fabricante.",
+    "Limpiar y secar el prisma.",
+    "Colocar una gota del jugo homogenizado sobre el prisma, cubriendo adecuadamente la superficie.",
+    "Cerrar el prisma y realizar la lectura.",
+    "Registrar el valor en °Brix. (Realizar tres mediciones de la misma muestra.)",
+    "Calcular el promedio:",
+  ];
+
+  const pasosPH = [
+    "Encender el pH-metro.",
+    "Calibrar utilizando soluciones buffer apropiadas, normalmente pH 7 y pH 4.",
+    "Enjuagar el electrodo con agua destilada.",
+    "Colocar el jugo homogenizado en un vaso limpio.",
+    "Introducir el electrodo hasta cubrir correctamente el sensor.",
+    "Agitar suavemente. (Esperar hasta estabilización de la lectura; el procedimiento del AWRI indica aprox. 20–30 seg.)",
+    "Registrar el pH.",
+    "Enjuagar nuevamente el electrodo después de la lectura.",
+    "Realizar dos determinaciones consecutivas de pH sobre la misma muestra, manteniendo las mismas condiciones de medición.",
+    "Calcular el promedio aritmético de ambas determinaciones:",
+  ];
+
   return (
     <div className="flex flex-col gap-6">
       <SectionCard
         title="Evaluación Fisicoquímica"
-        subtitle="Ingrese las lecturas del refractómetro (°Brix) y pH-metro"
+        subtitle="Procedimiento estandarizado para medición de °Brix y pH"
         icon={FlaskConical}
       >
         <div className="flex flex-col gap-8">
           {/* Brix section */}
-          <div className="flex flex-col gap-4">
-            <ReadingInputs
-              label="Grados Brix (°Brix)"
-              values={[data.brix1, data.brix2, data.brix3]}
-              onChange={setBrix}
-              unit="°Bx"
-              rangeLabel={`Rango ideal: ${LIMITES_FISICOQUIMICA.brix.min} – ${LIMITES_FISICOQUIMICA.brix.max} °Brix`}
-            />
-            {brixProm !== null && (
-              <div className="mt-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-4 bg-marine rounded-full" />
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio calculado</span>
+          <div>
+            <h3 className="text-lg font-black text-marine mb-4 border-b border-slate-100 pb-2">
+              Medición de °Brix — criterio principal de madurez
+            </h3>
+            <div className="flex flex-col gap-3">
+              {pasosBrix.map((paso, index) => (
+                <div key={index} className="flex gap-3 text-sm text-slate-700 font-medium">
+                  <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs">
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 mt-0.5">
+                    <p>{paso}</p>
+                    {index === 4 && (
+                      <div className="mt-4 mb-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                        <ReadingInputs
+                          label="Mediciones (°Brix)"
+                          values={[data.brix1, data.brix2, data.brix3]}
+                          onChange={setBrix}
+                          unit="°Bx"
+                          rangeLabel={`Ideal: ${LIMITES_FISICOQUIMICA.brix.min}–${LIMITES_FISICOQUIMICA.brix.max} °Bx`}
+                        />
+                      </div>
+                    )}
+                    {index === 5 && brixProm !== null && (
+                      <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Fórmula de promedio</span>
+                        </div>
+                        <ValueIndicator
+                          value={brixProm}
+                          min={LIMITES_FISICOQUIMICA.brix.min}
+                          max={LIMITES_FISICOQUIMICA.brix.max}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <ValueIndicator
-                  value={brixProm}
-                  min={LIMITES_FISICOQUIMICA.brix.min}
-                  max={LIMITES_FISICOQUIMICA.brix.max}
-                />
-              </div>
-            )}
+              ))}
+            </div>
           </div>
 
-          <div className="border-t border-slate-100" />
+          <div className="border-t-2 border-slate-100 border-dashed my-2" />
 
           {/* pH section */}
-          <div className="flex flex-col gap-4">
-            <ReadingInputs
-              label="pH"
-              values={[data.ph1, data.ph2]}
-              onChange={setPH}
-              unit="pH"
-              rangeLabel={`Rango ideal: ${LIMITES_FISICOQUIMICA.ph.min} – ${LIMITES_FISICOQUIMICA.ph.max}`}
-            />
-            {phProm !== null && (
-              <div className="mt-1">
-                <div className="flex items-center gap-2 mb-2">
-                  <div className="w-1 h-4 bg-marine rounded-full" />
-                  <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Promedio calculado</span>
+          <div>
+            <h3 className="text-lg font-black text-marine mb-4 border-b border-slate-100 pb-2">
+              Medición de pH — criterio complementario
+            </h3>
+            <div className="flex flex-col gap-3">
+              {pasosPH.map((paso, index) => (
+                <div key={index} className="flex gap-3 text-sm text-slate-700 font-medium">
+                  <span className="flex-shrink-0 flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 text-slate-500 font-bold text-xs">
+                    {index + 1}
+                  </span>
+                  <div className="flex-1 mt-0.5">
+                    <p>{paso}</p>
+                    {index === 8 && (
+                      <div className="mt-4 mb-2 p-4 rounded-xl border border-slate-200 bg-slate-50/50">
+                        <ReadingInputs
+                          label="Determinaciones (pH)"
+                          values={[data.ph1, data.ph2]}
+                          onChange={setPH}
+                          unit="pH"
+                          rangeLabel={`Ideal: ${LIMITES_FISICOQUIMICA.ph.min}–${LIMITES_FISICOQUIMICA.ph.max}`}
+                        />
+                      </div>
+                    )}
+                    {index === 9 && phProm !== null && (
+                      <div className="mt-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span className="text-xs text-slate-500 uppercase tracking-wider font-bold">Fórmula de promedio</span>
+                        </div>
+                        <ValueIndicator
+                          value={phProm}
+                          min={LIMITES_FISICOQUIMICA.ph.min}
+                          max={LIMITES_FISICOQUIMICA.ph.max}
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <ValueIndicator
-                  value={phProm}
-                  min={LIMITES_FISICOQUIMICA.ph.min}
-                  max={LIMITES_FISICOQUIMICA.ph.max}
-                />
-              </div>
-            )}
+              ))}
+            </div>
           </div>
         </div>
       </SectionCard>
