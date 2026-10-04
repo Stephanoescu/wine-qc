@@ -30,9 +30,8 @@ export default function LandingPage() {
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-8 py-5">
-        <div className="flex items-center gap-3">
-          <img src="/images/logo.png" alt="Logo Bodega Control" className="h-10 w-auto object-contain" />
-          <span className="text-sm font-semibold text-white tracking-wide">Bodega Control</span>
+        <div className="flex items-center">
+          <img src="/images/logo.png" alt="Logo" className="h-16 sm:h-20 w-auto object-contain drop-shadow-md" />
         </div>
         <span className="text-xs text-white/70 tracking-widest uppercase hidden sm:block">
           Sistema de Calidad Vitivinícola

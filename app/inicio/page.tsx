@@ -89,10 +89,9 @@ export default function InicioPage() {
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/images/logo.png" alt="Logo Bodega" className="w-10 h-10 object-contain" />
+            <img src="/images/logo.png" alt="Logo" className="h-12 sm:h-14 w-auto object-contain" />
             <div>
-              <p className="text-base font-bold text-marine leading-none">Bodega Control</p>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">Sistema de Calidad Vitivinícola</p>
+              <p className="text-xs text-slate-500 font-medium hidden sm:block">Sistema de Calidad Vitivinícola</p>
             </div>
           </div>
           <Link
