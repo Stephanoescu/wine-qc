@@ -86,12 +86,10 @@ export default function InicioPage() {
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-md sticky top-0 z-10 shadow-sm">
+      <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-10 shadow-sm">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-marine text-gold border border-marine-light">
-              <Wine className="w-5 h-5" strokeWidth={1.5} />
-            </div>
+            <img src="/images/logo.png" alt="Logo Bodega" className="w-10 h-10 object-contain" />
             <div>
               <p className="text-base font-bold text-marine leading-none">Bodega Control</p>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">Sistema de Calidad Vitivinícola</p>
@@ -107,27 +105,41 @@ export default function InicioPage() {
         </div>
       </header>
 
-      {/* Hero text */}
-      <div className="max-w-5xl mx-auto px-6 py-12 flex flex-col gap-3">
-        <div className="flex items-center gap-2 mb-1">
-          <div className="w-1 h-5 rounded-full bg-gold" />
-          <span className="text-xs font-bold tracking-widest text-gold-dark uppercase">
-            Procedimientos disponibles
-          </span>
+      {/* Hero text with Dashboard background */}
+      <div 
+        className="relative border-b border-slate-200 bg-marine overflow-hidden"
+      >
+        <div 
+          className="absolute inset-0 opacity-20 pointer-events-none"
+          style={{
+            backgroundImage: `url('/images/dashboard.png')`,
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-marine via-marine/90 to-transparent pointer-events-none" />
+        
+        <div className="relative max-w-5xl mx-auto px-6 py-14 flex flex-col gap-3">
+          <div className="flex items-center gap-2 mb-1">
+            <div className="w-1 h-5 rounded-full bg-gold" />
+            <span className="text-xs font-bold tracking-widest text-gold-light uppercase">
+              Procedimientos disponibles
+            </span>
+          </div>
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white leading-tight">
+            ¿Qué procedimiento{" "}
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-gold-light to-white">
+              deseas iniciar?
+            </span>
+          </h1>
+          <p className="text-slate-300 max-w-lg leading-relaxed font-medium">
+            Selecciona el módulo de trabajo. Todos los registros se guardan automáticamente en el sistema central.
+          </p>
         </div>
-        <h1 className="text-3xl sm:text-4xl font-extrabold text-marine leading-tight">
-          ¿Qué procedimiento{" "}
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-marine to-marine-light">
-            deseas iniciar?
-          </span>
-        </h1>
-        <p className="text-slate-600 max-w-lg leading-relaxed font-medium">
-          Selecciona el módulo de trabajo. Todos los registros se guardan automáticamente en el sistema central.
-        </p>
       </div>
 
       {/* Cards */}
-      <div className="max-w-5xl mx-auto px-6 pb-12 flex-1 w-full">
+      <div className="max-w-5xl mx-auto px-6 py-10 flex-1 w-full">
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
           <ProcedimientoCard
             href="/recepcion"

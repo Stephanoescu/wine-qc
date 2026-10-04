@@ -16,7 +16,7 @@ export default function LandingPage() {
             rgba(26, 61, 115, 0.50) 55%,
             rgba(10, 25, 48, 0.90) 100%
           ),
-          url('https://images.unsplash.com/photo-1568213214768-d3f3ba70e773?w=1920&q=80')
+          url('/images/Inicio.png')
         `,
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -30,10 +30,8 @@ export default function LandingPage() {
 
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-8 py-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-gold/20 border border-gold/40">
-            <Wine className="w-4 h-4 text-gold-light" strokeWidth={1.5} />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src="/images/logo.png" alt="Logo Bodega Control" className="h-10 w-auto object-contain" />
           <span className="text-sm font-semibold text-white tracking-wide">Bodega Control</span>
         </div>
         <span className="text-xs text-white/70 tracking-widest uppercase hidden sm:block">
