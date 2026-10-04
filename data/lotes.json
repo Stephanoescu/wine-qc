@@ -1,5 +1,27 @@
 [
   {
+    "id": "1791084088708",
+    "codigoLote": "LOT-2026-6381",
+    "proveedor": "viña santa rosa",
+    "variedad": "Pinot Noir",
+    "procedencia": "cuartel valle mepo",
+    "fecha": "2026-10-04",
+    "hora": "22:20",
+    "peso": 2397,
+    "brixPromedio": 16,
+    "phPromedio": 3.49,
+    "categoria": "A",
+    "observaciones": [],
+    "inspeccionVisual": {
+      "podredumbre": 2,
+      "bayasDaniadas": 2,
+      "deshidratacion": 39.97,
+      "bayasVerdes": 2,
+      "materiaExtrana": 2
+    },
+    "savedAt": "2026-10-04T03:21:28.827Z"
+  },
+  {
     "id": "1791082732722",
     "codigoLote": "LOT-2026-5706",
     "proveedor": "dsafaf",

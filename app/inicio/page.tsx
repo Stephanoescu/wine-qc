@@ -149,28 +149,28 @@ export default function InicioPage() {
             icon={ArrowRightLeft}
             title="Etapa Trasiego"
             description="Control y registro de movimientos de vino entre depósitos."
-            disabled
+            primary
           />
           <ProcedimientoCard
             href="#"
             icon={Cog}
             title="Proceso de Trituración"
             description="Monitoreo del despalillado y estrujado mecánico de la uva."
-            disabled
+            primary
           />
           <ProcedimientoCard
             href="#"
             icon={FlaskConical}
             title="Dosificación de Correctores de Acidez"
             description="Ajustes y adiciones enológicas para la corrección del mosto."
-            disabled
+            primary
           />
           <ProcedimientoCard
             href="#"
             icon={Hourglass}
             title="Proceso Maceración (Horas)"
             description="Control de tiempos y temperatura durante el contacto pelicular."
-            disabled
+            primary
           />
         </div>
 
