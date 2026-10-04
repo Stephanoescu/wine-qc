@@ -1,1 +1,24 @@
-[]
+[
+  {
+    "id": "1791082732722",
+    "codigoLote": "LOT-2026-5706",
+    "proveedor": "dsafaf",
+    "variedad": "Merlot",
+    "procedencia": "adasdasdsa",
+    "fecha": "2026-10-04",
+    "hora": "21:50",
+    "peso": 1234,
+    "brixPromedio": 16,
+    "phPromedio": 3.495,
+    "categoria": "A",
+    "observaciones": [],
+    "inspeccionVisual": {
+      "podredumbre": 12,
+      "bayasDaniadas": 12,
+      "deshidratacion": 12,
+      "bayasVerdes": 12,
+      "materiaExtrana": 12
+    },
+    "savedAt": "2026-10-04T02:58:52.751Z"
+  }
+]

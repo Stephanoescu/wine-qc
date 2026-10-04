@@ -53,18 +53,64 @@ const EMPTY_FISICO: FisicoquimicaData = {
   ph2: "",
 };
 
+import { useRouter } from "next/navigation";
+
 export default function RecepcionPage() {
+  const router = useRouter();
   const [step, setStep] = useState(1);
+  const [editId, setEditId] = useState<string | null>(null);
+  const [isLoaded, setIsLoaded] = useState(false);
   const [identificacion, setIdentificacion] = useState<IdentificacionData>(EMPTY_ID);
   const [visual, setVisual] = useState<InspeccionVisualData>(EMPTY_VISUAL);
   const [fisico, setFisico] = useState<FisicoquimicaData>(EMPTY_FISICO);
+
+  React.useEffect(() => {
+    // Client-side detection of edit param to avoid Next.js build Suspense errors
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get("edit");
+    if (id) {
+      setEditId(id);
+      fetch("/api/lotes")
+        .then((res) => res.json())
+        .then((data: LoteGuardado[]) => {
+          const lote: any = data.find((l: any) => l.id === id);
+          if (lote) {
+            setIdentificacion({
+              proveedor: lote.proveedor,
+              procedencia: lote.procedencia,
+              fecha: lote.fecha,
+              hora: lote.hora,
+              variedad: lote.variedad,
+              peso: lote.peso.toString(),
+              codigoLote: lote.codigoLote,
+            });
+            if (lote.inspeccionVisual) {
+              setVisual({
+                podredumbre: lote.inspeccionVisual.podredumbre?.toString() || "",
+                bayasDaniadas: lote.inspeccionVisual.bayasDaniadas?.toString() || "",
+                deshidratacion: lote.inspeccionVisual.deshidratacion?.toString() || "",
+                bayasVerdes: lote.inspeccionVisual.bayasVerdes?.toString() || "",
+                materiaExtrana: lote.inspeccionVisual.materiaExtrana?.toString() || "",
+              });
+            }
+          }
+          setIsLoaded(true);
+        })
+        .catch(() => setIsLoaded(true));
+    } else {
+      setIsLoaded(true);
+    }
+  }, []);
 
   const pesoNeto = parseFloat(identificacion.peso) || 0;
 
   async function handleSave(lote: LoteGuardado): Promise<{ ok: boolean; error?: string }> {
     try {
-      const res = await fetch("/api/lotes", {
-        method: "POST",
+      const url = editId ? `/api/lotes/${editId}` : "/api/lotes";
+      const method = editId ? "PUT" : "POST";
+
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(lote),
       });
@@ -72,16 +118,21 @@ export default function RecepcionPage() {
       if (!res.ok) return { ok: false, error: json.error ?? "Error al guardar" };
 
       setTimeout(() => {
-        setStep(1);
-        setIdentificacion({ ...EMPTY_ID, codigoLote: makeCodigoLote() });
-        setVisual(EMPTY_VISUAL);
-        setFisico(EMPTY_FISICO);
-      }, 4000);
+        router.push("/reportes");
+      }, 3000);
 
       return { ok: true };
     } catch {
       return { ok: false, error: "Error de red. Verifique que el servidor esté activo." };
     }
+  }
+
+  if (!isLoaded) {
+    return (
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+        <p className="text-marine font-bold">Cargando lote...</p>
+      </div>
+    );
   }
 
   return (
@@ -151,6 +202,7 @@ export default function RecepcionPage() {
             pesoNeto={pesoNeto}
             onPrev={() => setStep(4)}
             onSave={handleSave}
+            isEditing={!!editId}
           />
         )}
       </div>

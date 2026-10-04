@@ -28,6 +28,7 @@ interface Paso4Props {
   pesoNeto: number;
   onPrev: () => void;
   onSave: (lote: LoteGuardado) => Promise<{ ok: boolean; error?: string }>;
+  isEditing?: boolean;
 }
 
 const CAT_CONFIG: Record<
@@ -120,6 +121,7 @@ export function Paso4DecisionFinal({
   pesoNeto,
   onPrev,
   onSave,
+  isEditing,
 }: Paso4Props) {
   const { categoria, observaciones, brixPromedio, phPromedio, noConformeVisualCount } =
     evaluarCategoria(visual, fisico, pesoNeto);
@@ -275,7 +277,7 @@ export function Paso4DecisionFinal({
       <NavButtons
         onPrev={onPrev}
         onNext={handleSave}
-        nextLabel={saving ? "Guardando..." : "Guardar Lote"}
+        nextLabel={saving ? "Guardando..." : (isEditing ? "Actualizar Lote" : "Guardar Lote")}
         isLastStep
         prevLabel="Revisar datos"
         disabledNext={saving}
@@ -283,7 +285,7 @@ export function Paso4DecisionFinal({
       {saving && (
         <div className="flex items-center justify-center gap-2 text-sm font-bold text-marine">
           <Loader2 className="w-4 h-4 animate-spin text-gold" />
-          Guardando en el sistema...
+          {isEditing ? "Actualizando en el sistema..." : "Guardando en el sistema..."}
         </div>
       )}
     </div>

@@ -18,6 +18,7 @@ import {
   Loader2,
   Trash2,
   Eye,
+  Edit,
 } from "lucide-react";
 import { calcularKPIs, type LoteGuardado, type Categoria } from "@/lib/recepcion-data";
 
@@ -334,6 +335,13 @@ function LotesTable({
                 </td>
                 <td className="px-5 py-3.5 whitespace-nowrap text-right">
                   <div className="flex items-center justify-end gap-1">
+                    <Link
+                      href={`/recepcion?edit=${lote.id}`}
+                      className="p-2 rounded-lg text-slate-400 hover:text-marine hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+                      title="Editar lote"
+                    >
+                      <Edit className="w-4 h-4" />
+                    </Link>
                     <button
                       onClick={() => onView(lote)}
                       className="p-2 rounded-lg text-slate-400 hover:text-marine hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
