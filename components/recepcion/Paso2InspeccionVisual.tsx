@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Eye, AlertTriangle, CheckCircle2, Info, XCircle } from "lucide-react";
+import { Eye, AlertTriangle, CheckCircle2, Info, XCircle, ChevronDown, ImageIcon } from "lucide-react";
 import { LIMITES_VISUAL, type InspeccionVisualData } from "@/lib/recepcion-data";
 import { SectionCard, NavButtons } from "./WizardUI";
 
@@ -23,6 +23,8 @@ interface DefectoRowProps {
   onChange: (v: string) => void;
   limiteMax: number;        // % max for "no conforme"
   limiteObs?: number;       // % max for "conforme" (before observed)
+  descripcion: string;
+  imageSrc: string;
 }
 
 function pctFromKg(kg: string, pesoNeto: number): number | null {
@@ -38,7 +40,11 @@ function DefectoRow({
   onChange,
   limiteMax,
   limiteObs,
+  descripcion,
+  imageSrc,
 }: DefectoRowProps) {
+  const [isExpanded, setIsExpanded] = React.useState(false);
+
   const pct = pctFromKg(valueKg, pesoNeto);
   const hasValue = pct !== null;
 
@@ -67,10 +73,14 @@ function DefectoRow({
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
         {/* Label + limits */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsExpanded(!isExpanded)}
+            className="flex items-center gap-2 group outline-none"
+          >
             <div className={`w-2 h-2 rounded-full flex-shrink-0 ${cfg.dot}`} />
-            <span className="text-sm font-bold text-marine">{label}</span>
-          </div>
+            <span className="text-sm font-bold text-marine group-hover:text-gold-dark transition-colors">{label}</span>
+            <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform ${isExpanded ? "rotate-180" : ""}`} />
+          </button>
           <p className="text-xs text-slate-500 mt-1 ml-4 font-medium">
             {limiteObs !== undefined
               ? `Conforme ≤ ${limiteObs}% · Observado ${limiteObs}–${limiteMax}% · NC > ${limiteMax}%`
@@ -117,6 +127,26 @@ function DefectoRow({
           )}
         </div>
       </div>
+
+      {/* Expanded Description & Image */}
+      {isExpanded && (
+        <div className="mt-4 pt-4 border-t border-slate-200/50 flex flex-col sm:flex-row gap-4 animate-in fade-in slide-in-from-top-2">
+          <div className="w-full sm:w-28 h-20 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0 border border-slate-200 relative flex flex-col items-center justify-center">
+            <ImageIcon className="w-6 h-6 text-slate-300 mb-1" />
+            <span className="text-[9px] text-slate-400 font-medium text-center px-2 leading-tight">Pendiente imagen<br/>({imageSrc.split('/').pop()})</span>
+            {/* When you put images in public/images folder, this img tag will show them automatically over the placeholder */}
+            <img 
+              src={imageSrc} 
+              alt={label} 
+              className="absolute inset-0 w-full h-full object-cover" 
+              onError={(e) => { e.currentTarget.style.display = 'none'; }} 
+            />
+          </div>
+          <p className="text-sm text-slate-600 leading-relaxed font-medium flex-1">
+            {descripcion}
+          </p>
+        </div>
+      )}
     </div>
   );
 }
@@ -185,6 +215,8 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             pesoNeto={pesoNeto}
             onChange={set("podredumbre")}
             limiteMax={LIMITES_VISUAL.podredumbre.max}
+            descripcion="Bayas con crecimiento fúngico visible, descomposición, tejido blando o presencia de olores anormales."
+            imageSrc="/images/moho.png"
           />
           <DefectoRow
             label={LIMITES_VISUAL.bayasDaniadas.label}
@@ -192,6 +224,8 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             pesoNeto={pesoNeto}
             onChange={set("bayasDaniadas")}
             limiteMax={LIMITES_VISUAL.bayasDaniadas.max}
+            descripcion="Bayas con ruptura de piel, pérdida de jugo, aplastamiento o daño mecánico evidente."
+            imageSrc="/images/daniadas.png"
           />
           <DefectoRow
             label={LIMITES_VISUAL.deshidratacion.label}
@@ -199,6 +233,8 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             pesoNeto={pesoNeto}
             onChange={set("deshidratacion")}
             limiteMax={LIMITES_VISUAL.deshidratacion.max}
+            descripcion="Bayas con arrugamiento marcado, pérdida de turgencia o signos evidentes de deshidratación."
+            imageSrc="/images/deshidratacion.png"
           />
           <DefectoRow
             label={LIMITES_VISUAL.bayasVerdes.label}
@@ -207,6 +243,8 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             onChange={set("bayasVerdes")}
             limiteObs={LIMITES_VISUAL.bayasVerdes.conformeMax}
             limiteMax={LIMITES_VISUAL.bayasVerdes.observadoMax}
+            descripcion="Bayas con desarrollo insuficiente de color, textura o condición aparente respecto del resto del lote."
+            imageSrc="/images/verdes.png"
           />
           <DefectoRow
             label={LIMITES_VISUAL.materiaExtrana.label}
@@ -214,6 +252,8 @@ export function Paso2InspeccionVisual({ data, pesoNeto, onChange, onNext, onPrev
             pesoNeto={pesoNeto}
             onChange={set("materiaExtrana")}
             limiteMax={LIMITES_VISUAL.materiaExtrana.max}
+            descripcion="Hojas, tallos en exceso, tierra, piedras, insectos u otros materiales ajenos a la uva."
+            imageSrc="/images/extrana.png"
           />
 
           {/* Summary feedback */}
