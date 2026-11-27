@@ -3,9 +3,10 @@
 import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, Plus, Printer, Trash2 } from "lucide-react";
+import { ArrowLeft, FilePen, Plus, Printer, Trash2 } from "lucide-react";
 import { getLote, updateLote } from "@/lib/recepcion/almacen";
 import { esLegacy, type LoteAlmacenado, type LoteV2 } from "@/lib/recepcion/tipos";
+import { trituracionDeLote } from "@/lib/trituracion/almacen";
 import { useEsCliente } from "@/lib/use-es-cliente";
 import { Aviso } from "@/components/recepcion/WizardUI";
 import { InformeLegacy, InformeLote } from "@/components/lote/InformeLote";
@@ -17,10 +18,10 @@ export default function DetalleLotePage({
   searchParams,
 }: {
   params: Promise<{ id: string }>;
-  searchParams: Promise<{ nuevo?: string }>;
+  searchParams: Promise<{ nuevo?: string; editado?: string }>;
 }) {
   const { id } = use(params);
-  const { nuevo } = use(searchParams);
+  const { nuevo, editado } = use(searchParams);
   const esCliente = useEsCliente();
 
   return (
@@ -52,7 +53,7 @@ export default function DetalleLotePage({
 
       <main className="flex-1 max-w-5xl mx-auto w-full px-4 sm:px-6 py-6 sm:py-8 print:p-0 print:max-w-none">
         {esCliente ? (
-          <Detalle id={decodeURIComponent(id)} nuevo={nuevo === "1"} />
+          <Detalle id={decodeURIComponent(id)} nuevo={nuevo === "1"} editado={editado === "1"} />
         ) : (
           <p className="text-marine font-bold text-center py-20">Cargando...</p>
         )}
@@ -61,7 +62,7 @@ export default function DetalleLotePage({
   );
 }
 
-function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
+function Detalle({ id, nuevo, editado }: { id: string; nuevo: boolean; editado: boolean }) {
   // Solo en el navegador (ver useEsCliente): puede leer localStorage al iniciar.
   const [lote, setLote] = useState<LoteAlmacenado | null>(() => getLote(id));
   const [eliminando, setEliminando] = useState(false);
@@ -80,6 +81,19 @@ function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
         </Link>
       </div>
     );
+  }
+
+  function editar() {
+    if (!lote) return;
+    if (
+      trituracionDeLote(lote.id) &&
+      !confirm(
+        "Este lote ya tiene un registro de Trituración vinculado. Los cambios no actualizan Trituración y, si cambia el peso disponible, deberá confirmar que Trituración fue informada. ¿Continuar con la edición?",
+      )
+    ) {
+      return;
+    }
+    router.push(`/reportes/${encodeURIComponent(lote.id)}/editar`);
   }
 
   function guardar(nuevoLote: LoteV2) {
@@ -101,6 +115,25 @@ function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
               </Link>
             </div>
           </Aviso>
+        </div>
+      )}
+      {editado && (
+        <div className="print:hidden">
+          <Aviso tono="ok" titulo="Cambios guardados">
+            Los cambios quedaron en la bitácora del informe.
+          </Aviso>
+        </div>
+      )}
+      {!esLegacy(lote) && (
+        <div className="flex justify-end print:hidden">
+          <button
+            type="button"
+            onClick={editar}
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-marine/30 bg-white text-sm font-bold text-marine hover:bg-slate-50 shadow-sm"
+          >
+            <FilePen className="w-4 h-4" />
+            Editar informe
+          </button>
         </div>
       )}
       {esLegacy(lote) ? (

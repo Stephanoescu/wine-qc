@@ -15,6 +15,8 @@ import {
   type AccionEstado,
 } from "@/lib/recepcion/lote";
 import type { LoteV2 } from "@/lib/recepcion/tipos";
+import { ROL_ENOLOGIA, type Rol } from "@/lib/config/roles";
+import { CampoFirma } from "./CampoFirma";
 import { formatear, redondear, validarNumero } from "@/lib/recepcion/validacion";
 import {
   Aviso,
@@ -64,17 +66,18 @@ function CompletarTara({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
   const pendientes = lote.pesado.jabas.filter((j) => j.taraPendiente);
   const [taras, setTaras] = useState<Record<number, string>>({});
   const [por, setPor] = useState("");
+  const [rol, setRol] = useState<Rol | "">("");
   const [error, setError] = useState<string | null>(null);
 
   const evaluadas = pendientes.map((j) => ({ jaba: j, v: validarTara(taras[j.numero] ?? "", j.pesoLleno) }));
   const validas = evaluadas.filter((e) => e.v.valor !== null);
   const hayError = evaluadas.some((e) => e.v.error);
-  const puede = validas.length > 0 && !hayError && por.trim() !== "";
+  const puede = validas.length > 0 && !hayError && por.trim() !== "" && rol !== "";
 
   function guardar() {
     if (!puede) return;
     const mapa = Object.fromEntries(validas.map((e) => [e.jaba.numero, e.v.valor as number]));
-    const r = onGuardar(completarTaras(lote, mapa, por, new Date().toISOString()));
+    const r = onGuardar(completarTaras(lote, mapa, { nombre: por, rol: rol as Rol }, new Date().toISOString()));
     setError(r.ok ? null : r.error);
   }
 
@@ -113,11 +116,7 @@ function CompletarTara({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
             </div>
           ))}
         </div>
-        <div className="sm:max-w-sm">
-          <FormField label="Registrado por" required>
-            <StyledInput value={por} onChange={(e) => setPor(e.target.value)} placeholder="Nombre y apellido" />
-          </FormField>
-        </div>
+        <CampoFirma etiqueta="Registrado por" nombre={por} rol={rol} onNombre={setPor} onRol={setRol} />
         <Mensaje error={error} ok={null} />
         <button type="button" disabled={!puede} onClick={guardar} className={`${botonPrimario} self-start`}>
           Guardar tara{validas.length > 1 ? "s" : ""}
@@ -138,16 +137,17 @@ function CompletarAcidez({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar
   const [valor, setValor] = useState(a.valor === null ? "" : String(a.valor).replace(".", ","));
   const [confirmado, setConfirmado] = useState<boolean | null>(null);
   const [por, setPor] = useState("");
+  const [rol, setRol] = useState<Rol | "">("");
   const [error, setError] = useState<string | null>(null);
 
   const v = validarNumero(valor, LIMITES_ENTRADA.acidezGL);
   const fuera = v.valor !== null && (v.valor < RANGOS.acidez.min || v.valor > RANGOS.acidez.max);
-  const puede = metodo.trim() !== "" && puntoFinal.trim() !== "" && v.valor !== null && por.trim() !== "";
+  const puede = metodo.trim() !== "" && puntoFinal.trim() !== "" && v.valor !== null && por.trim() !== "" && rol !== "";
 
   function guardar() {
     if (!puede || v.valor === null) return;
     const r = onGuardar(
-      completarAcidez(lote, { metodo, puntoFinal, valor: v.valor, confirmadoPorLab: fuera ? confirmado === true : undefined }, por, new Date().toISOString()),
+      completarAcidez(lote, { metodo, puntoFinal, valor: v.valor, confirmadoPorLab: fuera ? confirmado === true : undefined }, { nombre: por, rol: rol as Rol }, new Date().toISOString()),
     );
     setError(r.ok ? null : r.error);
   }
@@ -186,11 +186,7 @@ function CompletarAcidez({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar
             <SiNo pregunta={PREGUNTA_ACIDEZ_CONFIRMADA} value={confirmado} onChange={setConfirmado} etiquetaSi="Sí, lo confirmó" etiquetaNo="Aún no" />
           </div>
         )}
-        <div className="sm:max-w-sm">
-          <FormField label="Registrado por" required>
-            <StyledInput value={por} onChange={(e) => setPor(e.target.value)} placeholder="Nombre y apellido" />
-          </FormField>
-        </div>
+        <CampoFirma etiqueta="Registrado por" nombre={por} rol={rol} onNombre={setPor} onRol={setRol} />
         <Mensaje error={error} ok={null} />
         <button type="button" disabled={!puede} onClick={guardar} className={`${botonPrimario} self-start`}>
           Guardar acidez
@@ -213,12 +209,13 @@ function CambiarEstado({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
   const disponibles = accionesDisponibles(lote);
   const [accion, setAccion] = useState<AccionEstado | null>(null);
   const [nombre, setNombre] = useState("");
+  const [rolFirma, setRolFirma] = useState<Rol | "">("");
   const [destino, setDestino] = useState("");
   const [motivo, setMotivo] = useState("");
   const [destinoVerificado, setDestinoVerificado] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const errores = accion ? validarFirmaAccion(accion, { nombre, destino, motivo }) : {};
+  const errores = accion ? validarFirmaAccion(accion, { nombre, rol: rolFirma, destino, motivo }) : {};
   const requiereVerificacion = accion === "liberar" || accion === "liberarConObservaciones";
   const puede = accion !== null && Object.keys(errores).length === 0 && (!requiereVerificacion || destinoVerificado);
 
@@ -230,7 +227,7 @@ function CambiarEstado({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
         : `¿Confirmar la LIBERACIÓN del lote ${lote.codigoLote} hacia «${destino.trim()}»?`;
     if (!confirm(texto)) return;
     try {
-      const r = onGuardar(cambiarEstado(lote, accion, { nombre, destino, motivo }, new Date().toISOString()));
+      const r = onGuardar(cambiarEstado(lote, accion, { nombre, rol: rolFirma, destino, motivo }, new Date().toISOString()));
       setError(r.ok ? null : r.error);
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo cambiar el estado.");
@@ -273,9 +270,16 @@ function CambiarEstado({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
 
         {accion && (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-slate-200 bg-slate-50">
-            <FormField label={conEnologia ? "Confirmado por (Enología)" : "Autorizado por"} required>
-              <StyledInput value={nombre} onChange={(e) => setNombre(e.target.value)} placeholder="Nombre y apellido" />
-            </FormField>
+            <div className="sm:col-span-2">
+              <CampoFirma
+                etiqueta={conEnologia ? "Confirmado por (Enología)" : "Autorizado por"}
+                nombre={nombre}
+                rol={conEnologia ? ROL_ENOLOGIA : rolFirma}
+                rolFijo={conEnologia ? ROL_ENOLOGIA : undefined}
+                onNombre={setNombre}
+                onRol={setRolFirma}
+              />
+            </div>
             <FormField label="Destino" required ayuda="Código o tanque">
               <StyledInput value={destino} onChange={(e) => setDestino(e.target.value)} />
             </FormField>

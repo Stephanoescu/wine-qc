@@ -1,9 +1,10 @@
 // ============================================================
 // Lógica de evaluación del lote (funciones puras, sin React)
 // ============================================================
-import { DECIMALES, LIMITES_ENTRADA, RANGOS, TABLA_MUESTREO } from "@/lib/config/recepcion";
+import { DECIMALES, LIMITES_ENTRADA, PESO_MAX_JABA_KG, RANGOS, TABLA_MUESTREO, TARA_MAX_KG } from "@/lib/config/recepcion";
+import { MENSAJES_PESO } from "@/lib/config/recepcion-textos";
 import type { BorradorLote, FilaJaba, FilaMuestra } from "./tipos";
-import { redondear, validarNumero, type ReglaNumero } from "./validacion";
+import { formatear, redondear, validarNumero, type ReglaNumero } from "./validacion";
 
 // ─────────────────────────────────────────
 // Muestreo
@@ -93,28 +94,51 @@ export interface EvaluacionJaba {
   completa: boolean;
 }
 
+const kg = (n: number) => formatear(n, 2, 0);
+export const MSG_NETO_MAX = MENSAJES_PESO.netoMax(kg(PESO_MAX_JABA_KG));
+const MSG_LLENO_MAX = MENSAJES_PESO.llenoMax(kg(PESO_MAX_JABA_KG + TARA_MAX_KG), kg(PESO_MAX_JABA_KG), kg(TARA_MAX_KG));
+const MSG_TARA_MAX = MENSAJES_PESO.taraMax(kg(TARA_MAX_KG));
+
+/** Lectura de la balanza: > 0 y ≤ neto máximo + tara máxima. */
+function validarLleno(texto: string) {
+  const v = validarNumero(texto, { ...LIMITES_ENTRADA.pesoJabaKg, max: undefined });
+  if (v.valor !== null && v.valor > LIMITES_ENTRADA.pesoJabaKg.max) return { ...v, valor: null, error: MSG_LLENO_MAX };
+  return v;
+}
+
+/**
+ * Valida la tara de una jaba y calcula su neto: tara > 0, ≤ tara máxima,
+ * menor que el peso lleno, y neto ≤ peso neto máximo por jaba.
+ */
+export function validarTaraJaba(textoTara: string, lleno: number | null): { tara: number | null; neto: number | null; error: string | null; vacio: boolean } {
+  const t = validarNumero(textoTara, { ...LIMITES_ENTRADA.taraKg, max: undefined });
+  if (t.vacio || t.error) return { tara: null, neto: null, error: t.error, vacio: t.vacio };
+  const tara = t.valor as number;
+  if (tara > TARA_MAX_KG) return { tara: null, neto: null, error: MSG_TARA_MAX, vacio: false };
+  if (lleno === null) return { tara, neto: null, error: null, vacio: false };
+  if (tara >= lleno) return { tara: null, neto: null, error: MENSAJES_PESO.taraMenorQueLleno, vacio: false };
+  const neto = redondear(lleno - tara);
+  if (neto > PESO_MAX_JABA_KG) return { tara, neto: null, error: MSG_NETO_MAX, vacio: false };
+  return { tara, neto, error: null, vacio: false };
+}
+
 export function evaluarJaba(fila: FilaJaba, numero: number, usoFuncionTara: boolean): EvaluacionJaba {
-  const lleno = validarNumero(fila.pesoLleno, LIMITES_ENTRADA.pesoJabaKg);
+  const lleno = validarLleno(fila.pesoLleno);
   const base = { numero, lleno: lleno.valor, errorLleno: lleno.error, errorTara: null as string | null };
 
   if (usoFuncionTara) {
+    // Con la función TARA, la lectura ya es el neto.
+    if (lleno.valor !== null && lleno.valor > PESO_MAX_JABA_KG) {
+      return { ...base, lleno: null, errorLleno: MSG_NETO_MAX, neto: null, taraPendiente: false, completa: false };
+    }
     return { ...base, neto: lleno.valor, taraPendiente: false, completa: lleno.valor !== null };
   }
   if (fila.taraPendiente) {
     return { ...base, neto: null, taraPendiente: true, completa: lleno.valor !== null };
   }
 
-  const tara = validarNumero(fila.tara, LIMITES_ENTRADA.taraKg);
-  let errorTara = tara.error;
-  let neto: number | null = null;
-  if (tara.valor !== null && lleno.valor !== null) {
-    if (tara.valor >= lleno.valor) {
-      errorTara = "La tara debe ser menor que el peso lleno";
-    } else {
-      neto = redondear(lleno.valor - tara.valor);
-    }
-  }
-  return { ...base, errorTara, neto, taraPendiente: false, completa: neto !== null };
+  const t = validarTaraJaba(fila.tara, lleno.valor);
+  return { ...base, errorTara: t.error, neto: t.neto, taraPendiente: false, completa: t.neto !== null };
 }
 
 export interface ResumenPesado {

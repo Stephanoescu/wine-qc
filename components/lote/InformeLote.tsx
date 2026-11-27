@@ -16,13 +16,14 @@ import {
 } from "lucide-react";
 import { DECIMALES, RANGOS } from "@/lib/config/recepcion";
 import { PARAMETROS_VISUALES } from "@/lib/config/recepcion-textos";
-import type { ClaveParametroVisual, LoteLegacy, LoteV2, Ronda } from "@/lib/recepcion/tipos";
+import type { CambioBitacora, ClaveParametroVisual, LoteLegacy, LoteV2, Ronda } from "@/lib/recepcion/tipos";
 import { formatear } from "@/lib/recepcion/validacion";
 import { estadoLegacy } from "@/lib/recepcion/reporte";
 import { BadgeConformidad } from "@/components/recepcion/WizardUI";
 import { ListaMotivos } from "@/components/recepcion/Paso9Decision";
 import { EstadoBadge } from "./EstadoBadge";
 import { GaleriaFotos } from "./FotoMiniatura";
+import { BloquePesoDisponible } from "./PesoDisponible";
 
 const NOMBRE_PARAMETRO = Object.fromEntries(PARAMETROS_VISUALES.map((p) => [p.clave, p.nombre])) as Record<
   ClaveParametroVisual,
@@ -159,7 +160,12 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
                 Liberado con observaciones (Enología)
               </span>
             )}
-            {lote.estado !== lote.estadoSugerido && !lote.liberadoConObservaciones && (
+            {lote.retenidoPorEdicion && (
+              <span className="text-xs font-bold bg-white/15 text-white px-2 py-1 rounded-md print:text-amber-800 print:bg-amber-100">
+                Retenido por edición posterior: requiere nueva decisión firmada
+              </span>
+            )}
+            {lote.estado !== lote.estadoSugerido && !lote.liberadoConObservaciones && !lote.retenidoPorEdicion && (
               <span className="text-xs font-medium text-white/70 print:text-slate-500">
                 Estado sugerido por el sistema: {lote.estadoSugerido}
               </span>
@@ -190,6 +196,8 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
           )}
         </div>
       </section>
+
+      <BloquePesoDisponible netoTotal={lote.pesado.pesoNetoTotal} peso={lote.pesoDisponible} />
 
       {/* ── Resultados ── */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 print:grid-cols-3 print:gap-3">
@@ -245,8 +253,6 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
           <Rondas rondas={lote.ph.rondas} decimales={DECIMALES.ph} conDiferencia />
           <p className="text-xs font-medium text-slate-500">
             Rango {formatear(RANGOS.ph.min, 1)}–{formatear(RANGOS.ph.max, 1)}
-            {lote.ph.temperaturaJugo !== undefined &&
-              ` · Jugo a ${formatear(lote.ph.temperaturaJugo, DECIMALES.temperatura)} °C`}
           </p>
         </Tarjeta>
 
@@ -325,9 +331,14 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
           ) : (
             <ul className="flex flex-col gap-2">
               {lote.carga.observaciones.map((o, i) => (
-                <li key={i} className="flex gap-3 text-sm">
-                  <span className="flex-shrink-0 font-mono font-bold text-marine">N° {o.jaba}</span>
-                  <span className="font-medium text-slate-700">{o.descripcion}</span>
+                <li key={i} className="flex flex-col gap-2">
+                  <p className="flex gap-3 text-sm">
+                    <span className="flex-shrink-0 font-mono font-bold text-marine">N° {o.jaba}</span>
+                    <span className="font-medium text-slate-700">{o.descripcion}</span>
+                  </p>
+                  {(o.fotoIds ?? []).length > 0 && (
+                    <GaleriaFotos ids={o.fotoIds ?? []} nombre={`la observación de la jaba ${o.jaba}`} />
+                  )}
                 </li>
               ))}
             </ul>
@@ -366,14 +377,14 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
         <div className="flex flex-col gap-4">
           {lote.disposicion && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <Dato etiqueta="Autorizado por" valor={lote.disposicion.nombre} />
+              <Dato etiqueta="Autorizado por" valor={conRol(lote.disposicion.nombre, lote.disposicion.rol)} />
               <Dato etiqueta="Destino" valor={lote.disposicion.destino} />
               <Dato etiqueta="Fecha" valor={fechaHora(lote.disposicion.fecha)} />
             </div>
           )}
           {lote.enologia && (
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-3 border-t border-slate-100 first:pt-0 first:border-0">
-              <Dato etiqueta="Confirmado por (Enología)" valor={lote.enologia.nombre} />
+              <Dato etiqueta="Confirmado por (Enología)" valor={conRol(lote.enologia.nombre, lote.enologia.rol)} />
               <Dato etiqueta="Destino" valor={lote.enologia.destino} />
               <Dato etiqueta="Fecha" valor={fechaHora(lote.enologia.fecha)} />
               <div className="sm:col-span-3">
@@ -384,7 +395,7 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
           {!lote.disposicion && !lote.enologia && (
             <p className="text-sm font-medium text-slate-600">
               Lote retenido: pendiente de la decisión de Enología.
-              {lote.responsable && ` Registrado por ${lote.responsable}.`}
+              {lote.responsable && ` Registrado por ${conRol(lote.responsable, lote.responsableRol)}.`}
             </p>
           )}
         </div>
@@ -398,11 +409,18 @@ export function InformeLote({ lote }: { lote: LoteV2 }) {
               <li key={i} className="flex flex-wrap items-baseline gap-x-3 gap-y-1 text-sm">
                 <span className="font-mono text-xs text-slate-500">{fechaHora(h.fecha)}</span>
                 <EstadoBadge estado={h.estado} />
-                <span className="font-bold text-marine">{h.por}</span>
+                <span className="font-bold text-marine">{conRol(h.por, h.rol)}</span>
                 {h.nota && <span className="font-medium text-slate-600">{h.nota}</span>}
               </li>
             ))}
           </ol>
+        </Seccion>
+      )}
+
+      {/* ── Bitácora de cambios (solo lectura) ── */}
+      {(lote.bitacora ?? []).length > 0 && (
+        <Seccion titulo={`Bitácora de cambios (${lote.bitacora.length})`} icon={History}>
+          <BitacoraCambios entradas={lote.bitacora} />
         </Seccion>
       )}
 
@@ -488,5 +506,54 @@ export function InformeLegacy({ lote }: { lote: LoteLegacy }) {
         </Seccion>
       )}
     </div>
+  );
+}
+
+/** "Ana Torres (Producción)" */
+export function conRol(nombre: string, rol?: string): string {
+  return rol ? `${nombre} (${rol})` : nombre;
+}
+
+/** Bitácora agrupada por guardado (misma fecha, firma y motivo). Solo lectura. */
+export function BitacoraCambios({ entradas }: { entradas: CambioBitacora[] }) {
+  const grupos: { clave: string; fecha: string; por: string; rol: string; motivo: string; cambios: CambioBitacora[] }[] = [];
+  for (const e of entradas) {
+    const clave = `${e.fecha}|${e.por}|${e.rol}|${e.motivo}`;
+    const g = grupos[grupos.length - 1];
+    if (g && g.clave === clave) g.cambios.push(e);
+    else grupos.push({ clave, fecha: e.fecha, por: e.por, rol: e.rol, motivo: e.motivo, cambios: [e] });
+  }
+  return (
+    <ol className="flex flex-col gap-4">
+      {[...grupos].reverse().map((g) => (
+        <li key={g.clave} className="rounded-xl border border-slate-200 overflow-hidden break-inside-avoid">
+          <div className="px-3 py-2 bg-slate-50 border-b border-slate-200 text-xs flex flex-wrap gap-x-3 gap-y-1">
+            <span className="font-mono text-slate-500">{fechaHora(g.fecha)}</span>
+            <span className="font-bold text-marine">{conRol(g.por, g.rol)}</span>
+            <span className="font-medium text-slate-600">Motivo: {g.motivo}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-xs">
+              <thead>
+                <tr className="text-left text-[10px] font-black uppercase tracking-wider text-slate-500">
+                  <th className="px-3 py-1.5">Campo</th>
+                  <th className="px-3 py-1.5">Anterior</th>
+                  <th className="px-3 py-1.5">Nuevo</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100">
+                {g.cambios.map((c, i) => (
+                  <tr key={i}>
+                    <td className="px-3 py-1.5 font-bold text-marine">{c.campo}</td>
+                    <td className="px-3 py-1.5 text-slate-500 line-through decoration-slate-300">{c.anterior}</td>
+                    <td className="px-3 py-1.5 font-medium text-slate-800">{c.nuevo}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </li>
+      ))}
+    </ol>
   );
 }

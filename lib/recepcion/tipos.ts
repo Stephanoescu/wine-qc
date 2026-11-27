@@ -2,6 +2,8 @@
 // Modelo de datos del lote (formato v2) y del borrador del asistente
 // ============================================================
 
+import type { Rol } from "@/lib/config/roles";
+
 export type EstadoLote = "LIBERADO" | "RETENIDO" | "RECHAZADO";
 
 export type ClaveParametroVisual =
@@ -27,6 +29,8 @@ export interface JabaPesada {
 export interface ObsCarga {
   jaba: number;
   descripcion: string;
+  /** Fotos en IndexedDB (desde la v2; los lotes anteriores no tienen). */
+  fotoIds?: string[];
 }
 
 export interface LecturaTemp {
@@ -59,6 +63,8 @@ export interface Motivo {
 
 export interface Firma {
   nombre: string;
+  /** Desde la v2; las firmas anteriores no lo tienen. */
+  rol?: Rol;
   destino: string;
   motivo?: string;
   fecha: string;
@@ -68,7 +74,28 @@ export interface EntradaHistorial {
   estado: EstadoLote;
   fecha: string;
   por: string;
+  rol?: Rol;
   nota?: string;
+}
+
+/** Entrada de la bitácora de cambios (solo lectura). */
+export interface CambioBitacora {
+  campo: string;
+  anterior: string;
+  nuevo: string;
+  por: string;
+  rol: Rol;
+  motivo: string;
+  /** ISO. */
+  fecha: string;
+}
+
+/** Peso que Recepción entrega a Trituración (neto − descuentos). */
+export interface PesoDisponible {
+  kg: number;
+  /** Hay taras pendientes: no se puede usar en Trituración hasta completarlas. */
+  provisional: boolean;
+  descuentos: { materiaExtranaKg: number; uvaDaniadaKg: number; bolsaMuestraKg: number };
 }
 
 export interface LoteV2 {
@@ -98,6 +125,7 @@ export interface LoteV2 {
   };
   /** 1 o 2 rondas (la 2.ª solo si la 1.ª quedó fuera de rango). */
   brix: { rondas: Ronda[]; conforme: boolean };
+  /** `temperaturaJugo` solo existe en lotes guardados antes de la v2; ya no se registra ni se muestra. */
   ph: { rondas: Ronda[]; conforme: boolean; temperaturaJugo?: number };
   acidez: {
     metodo: string;
@@ -118,6 +146,12 @@ export interface LoteV2 {
   liberadoConObservaciones?: boolean;
   /** RETENIDO en el asistente: quién registró (opcional). */
   responsable?: string;
+  responsableRol?: Rol;
+  /** Un lote LIBERADO pasó a RETENIDO por una edición posterior; requiere nueva decisión firmada. */
+  retenidoPorEdicion?: { fecha: string; por: string; rol: Rol; motivo: string };
+  pesoDisponible: PesoDisponible;
+  /** Bitácora de cambios del informe (ediciones y pendientes completados). */
+  bitacora: CambioBitacora[];
   historial: EntradaHistorial[];
   // Copias para la tabla de /reportes
   pesoNeto: number;
@@ -177,6 +211,8 @@ export interface FilaObsCarga {
   id: string;
   jaba: string;
   descripcion: string;
+  /** Fotos en IndexedDB (ver lib/recepcion/fotos.ts). */
+  fotoIds: string[];
 }
 
 export interface FilaJaba {
@@ -232,7 +268,7 @@ export interface BorradorLote {
   /** Paso 6: rondas[0] = B1–B3, rondas[1] = B1'–B3' (solo cuenta si la 1.ª queda fuera de rango). */
   brix: { rondas: string[][] };
   /** Paso 7: rondas[0] = pH1–pH2, rondas[1] = pH1'–pH2'. */
-  ph: { rondas: string[][]; temperaturaJugo: string };
+  ph: { rondas: string[][] };
   /** Paso 8: resultado del laboratorio. */
   acidez: {
     /** El resultado aún no llega: se guarda el lote con la acidez pendiente. */
@@ -248,5 +284,7 @@ export interface BorradorLote {
    * según el estado: LIBERADO → Autorizado por + Destino; RECHAZADO →
    * Confirmado por (Enología) + Motivo + Destino; RETENIDO → responsable opcional.
    */
-  decision: { estado: EstadoLote | null; nombre: string; destino: string; motivo: string };
+  decision: { estado: EstadoLote | null; nombre: string; rol: Rol | ""; destino: string; motivo: string };
+  /** Solo en modo edición: firma de quien edita. */
+  edicion?: { por: string; rol: Rol | ""; motivo: string; trituracionInformada: boolean };
 }

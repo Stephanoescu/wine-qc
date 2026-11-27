@@ -40,9 +40,12 @@ export function useNavegacionEnter<T extends HTMLElement = HTMLDivElement>() {
 export function WizardProgress({
   steps,
   currentStep,
+  onSeleccionarPaso,
 }: {
   steps: readonly string[];
   currentStep: number;
+  /** Si se pasa, se puede saltar a cualquier paso (modo edición). */
+  onSeleccionarPaso?: (paso: number) => void;
 }) {
   const total = steps.length;
   return (
@@ -67,6 +70,20 @@ export function WizardProgress({
             />
           ))}
         </div>
+        {onSeleccionarPaso && (
+          <select
+            aria-label="Ir al paso"
+            value={currentStep}
+            onChange={(e) => onSeleccionarPaso(Number(e.target.value))}
+            className="mt-2 w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs font-bold text-marine"
+          >
+            {steps.map((label, i) => (
+              <option key={label} value={i + 1}>
+                Ir al paso {i + 1} · {label}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       {/* Desde sm: círculos con etiqueta, con scroll horizontal si no cabe */}
@@ -87,7 +104,18 @@ export function WizardProgress({
                 )}
                 <div
                   aria-current={isActive ? "step" : undefined}
-                  className={`relative z-10 w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${
+                  role={onSeleccionarPaso ? "button" : undefined}
+                  tabIndex={onSeleccionarPaso ? 0 : undefined}
+                  onClick={onSeleccionarPaso ? () => onSeleccionarPaso(stepNum) : undefined}
+                  onKeyDown={
+                    onSeleccionarPaso
+                      ? (e) => {
+                          if (e.key === "Enter" || e.key === " ") onSeleccionarPaso(stepNum);
+                        }
+                      : undefined
+                  }
+                  title={onSeleccionarPaso ? `Ir al paso ${stepNum}: ${label}` : undefined}
+                  className={`relative z-10 ${onSeleccionarPaso ? "cursor-pointer hover:ring-2 hover:ring-gold/50" : ""} w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold border-2 transition-all duration-300 ${
                     isActive
                       ? "bg-marine border-marine text-white shadow-md shadow-marine/20 scale-110"
                       : isDone

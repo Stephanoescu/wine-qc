@@ -344,8 +344,6 @@ export function estadoPaso6(b: BorradorLote): EstadoPaso6 {
 
 export interface EstadoPaso7 extends EstadoPaso {
   rondas: ResultadoRondas;
-  temperaturaJugo: number | null;
-  errorTemperaturaJugo: string | null;
 }
 
 export function estadoPaso7(b: BorradorLote): EstadoPaso7 {
@@ -354,11 +352,9 @@ export function estadoPaso7(b: BorradorLote): EstadoPaso7 {
   const f = faltaChecklist("Medición de pH", CHECK_PH, b.checks);
   if (f) faltantes.push(f);
   faltantes.push(...faltantesRondas(rondas, "pH"));
-  const t = validarNumero(b.ph.temperaturaJugo, LIMITES_ENTRADA.temperaturaC);
-  if (t.error) faltantes.push("Corrija la temperatura del jugo (o déjela vacía)");
   const fe = faltaChecklist("Cuidado del electrodo", CHECK_ELECTRODO, b.checks);
   if (fe) faltantes.push(fe);
-  return { valido: faltantes.length === 0, faltantes, rondas, temperaturaJugo: t.valor, errorTemperaturaJugo: t.error };
+  return { valido: faltantes.length === 0, faltantes, rondas };
 }
 
 // ── Paso 8: acidez de laboratorio ─────────────────────────

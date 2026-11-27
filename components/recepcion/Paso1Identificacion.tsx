@@ -50,7 +50,6 @@ export function Paso1Identificacion({ data, errores, onChange }: Paso1Props) {
           label="Número de jabas"
           required
           error={errores.numJabas}
-          ayuda="Define el pesado por jaba (paso 3) y el muestreo (paso 4)."
         >
           <NumeroInput
             entero

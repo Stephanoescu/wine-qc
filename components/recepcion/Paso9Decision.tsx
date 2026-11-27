@@ -5,7 +5,10 @@ import { ClipboardCheck, Gavel, ListChecks } from "lucide-react";
 import { CHECK_FINAL } from "@/lib/config/recepcion-textos";
 import type { EstadoPaso9 } from "@/lib/recepcion/lote";
 import type { BorradorLote, EstadoLote, Motivo } from "@/lib/recepcion/tipos";
+import { ROL_ENOLOGIA } from "@/lib/config/roles";
 import { EstadoBadge, ESTILO_ESTADO } from "@/components/lote/EstadoBadge";
+import { CampoFirma } from "@/components/lote/CampoFirma";
+import { BloquePesoDisponible } from "@/components/lote/PesoDisponible";
 import { Aviso, Checklist, FormField, SectionCard, StyledInput, inputBaseClasses } from "./WizardUI";
 
 const DESCRIPCION_ESTADO: Record<EstadoLote, string> = {
@@ -48,6 +51,8 @@ export function Paso9Decision({
         </div>
       </SectionCard>
 
+      <BloquePesoDisponible netoTotal={estado.pesoNetoTotal} peso={estado.pesoDisponible} />
+
       {/* ── Decisión ── */}
       <SectionCard title="Decisión del lote" subtitle="Elija el estado y complete la firma" icon={Gavel}>
         <div className="flex flex-col gap-5">
@@ -83,54 +88,7 @@ export function Paso9Decision({
             })}
           </div>
 
-          {elegido === "LIBERADO" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40">
-              <p className="sm:col-span-2 text-sm font-bold text-emerald-900">Disposición firmada que autoriza el destino</p>
-              <FormField label="Autorizado por" required>
-                <StyledInput value={d.nombre} onChange={(e) => onDecision({ nombre: e.target.value })} placeholder="Nombre y apellido" />
-              </FormField>
-              <FormField label="Destino" required ayuda="Código o tanque">
-                <StyledInput value={d.destino} onChange={(e) => onDecision({ destino: e.target.value })} placeholder="Ej.: Tanque T-04" />
-              </FormField>
-            </div>
-          )}
-
-          {elegido === "RETENIDO" && (
-            <div className="flex flex-col gap-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40">
-              <p className="text-sm font-medium text-amber-900">
-                El lote quedará <strong>RETENIDO</strong>. Desde el detalle del lote en Reportes podrá completar los datos
-                pendientes y luego liberarlo o rechazarlo con la firma correspondiente.
-              </p>
-              <div className="sm:max-w-sm">
-                <FormField label="Responsable del registro" ayuda="Opcional">
-                  <StyledInput value={d.nombre} onChange={(e) => onDecision({ nombre: e.target.value })} placeholder="Nombre y apellido" />
-                </FormField>
-              </div>
-            </div>
-          )}
-
-          {elegido === "RECHAZADO" && (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 p-4 rounded-xl border border-red-200 bg-red-50/40">
-              <p className="sm:col-span-2 text-sm font-bold text-red-900">Confirmación de Enología</p>
-              <FormField label="Confirmado por (Enología)" required>
-                <StyledInput value={d.nombre} onChange={(e) => onDecision({ nombre: e.target.value })} placeholder="Nombre y apellido" />
-              </FormField>
-              <FormField label="Destino" required ayuda="Código, tanque o devolución">
-                <StyledInput value={d.destino} onChange={(e) => onDecision({ destino: e.target.value })} placeholder="Ej.: Devolución al proveedor" />
-              </FormField>
-              <div className="sm:col-span-2">
-                <FormField label="Motivo" required>
-                  <textarea
-                    rows={3}
-                    value={d.motivo}
-                    onChange={(e) => onDecision({ motivo: e.target.value })}
-                    placeholder="Por qué se rechaza el lote"
-                    className={`${inputBaseClasses} resize-y`}
-                  />
-                </FormField>
-              </div>
-            </div>
-          )}
+          <FormularioFirmaDecision estado={elegido} decision={d} onDecision={onDecision} />
         </div>
       </SectionCard>
 
@@ -188,5 +146,91 @@ export function ListaMotivos({ motivos, onIrAPaso }: { motivos: Motivo[]; onIrAP
         </li>
       ))}
     </ul>
+  );
+}
+
+/**
+ * Campos de firma según el estado (paso 9 y edición del informe):
+ * LIBERADO → Autorizado por + rol + destino; RETENIDO → responsable opcional;
+ * RECHAZADO (o liberado con observaciones) → Enología + motivo + destino.
+ */
+export function FormularioFirmaDecision({
+  estado,
+  decision: d,
+  onDecision,
+  enologia,
+}: {
+  estado: EstadoLote;
+  decision: BorradorLote["decision"];
+  onDecision: (cambios: Partial<BorradorLote["decision"]>) => void;
+  /** Mostrar la firma de Enología aunque el estado sea LIBERADO (liberado con observaciones). */
+  enologia?: boolean;
+}) {
+  if (estado === "LIBERADO" && !enologia) {
+    return (
+      <div className="flex flex-col gap-4 p-4 rounded-xl border border-emerald-200 bg-emerald-50/40">
+        <p className="text-sm font-bold text-emerald-900">Disposición firmada que autoriza el destino</p>
+        <CampoFirma
+          etiqueta="Autorizado por"
+          nombre={d.nombre}
+          rol={d.rol}
+          onNombre={(nombre) => onDecision({ nombre })}
+          onRol={(rol) => onDecision({ rol })}
+        />
+        <div className="sm:max-w-sm">
+          <FormField label="Destino" required ayuda="Código o tanque">
+            <StyledInput value={d.destino} onChange={(e) => onDecision({ destino: e.target.value })} placeholder="Ej.: Tanque T-04" />
+          </FormField>
+        </div>
+      </div>
+    );
+  }
+  if (estado === "RETENIDO") {
+    return (
+      <div className="flex flex-col gap-4 p-4 rounded-xl border border-amber-200 bg-amber-50/40">
+        <p className="text-sm font-medium text-amber-900">
+          El lote quedará <strong>RETENIDO</strong>. Desde el detalle del lote en Reportes podrá completar los datos
+          pendientes y luego liberarlo o rechazarlo con la firma correspondiente.
+        </p>
+        <CampoFirma
+          etiqueta="Responsable del registro"
+          nombre={d.nombre}
+          rol={d.rol}
+          onNombre={(nombre) => onDecision({ nombre })}
+          onRol={(rol) => onDecision({ rol })}
+          requerido={false}
+        />
+      </div>
+    );
+  }
+  return (
+    <div className="flex flex-col gap-4 p-4 rounded-xl border border-red-200 bg-red-50/40">
+      <p className="text-sm font-bold text-red-900">Confirmación de Enología</p>
+      <CampoFirma
+        etiqueta="Confirmado por (Enología)"
+        nombre={d.nombre}
+        rol={ROL_ENOLOGIA}
+        rolFijo={ROL_ENOLOGIA}
+        onNombre={(nombre) => onDecision({ nombre })}
+      />
+      <div className="sm:max-w-sm">
+        <FormField label="Destino" required ayuda="Código, tanque o devolución">
+          <StyledInput
+            value={d.destino}
+            onChange={(e) => onDecision({ destino: e.target.value })}
+            placeholder="Ej.: Devolución al proveedor"
+          />
+        </FormField>
+      </div>
+      <FormField label="Motivo" required>
+        <textarea
+          rows={3}
+          value={d.motivo}
+          onChange={(e) => onDecision({ motivo: e.target.value })}
+          placeholder={estado === "RECHAZADO" ? "Por qué se rechaza el lote" : "Por qué se libera pese a las observaciones"}
+          className={`${inputBaseClasses} resize-y`}
+        />
+      </FormField>
+    </div>
   );
 }

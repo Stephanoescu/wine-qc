@@ -80,6 +80,15 @@ export const CHECK_PESADO: ItemChecklist[] = [
   },
 ];
 
+/** Mensajes de validación del pesado (paso 3 y completar tara). */
+export const MENSAJES_PESO = {
+  netoMax: (kg: string) => `El peso neto por jaba no puede superar ${kg} kg`,
+  llenoMax: (max: string, neto: string, tara: string) =>
+    `El peso lleno no puede superar ${max} kg (${neto} kg de uva + ${tara} kg de tara)`,
+  taraMax: (kg: string) => `La tara no puede superar ${kg} kg`,
+  taraMenorQueLleno: "La tara debe ser menor que el peso lleno",
+};
+
 // ── Paso 4 ────────────────────────────────────────────────
 export function textoTamanoMuestra(n: number): string {
   return `Seleccione al azar ${n} jabas que debe inspeccionar (realice la toma desde distintas zonas y niveles de la carga).`;

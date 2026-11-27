@@ -13,6 +13,11 @@ import {
 
 const CLAVE_BORRADOR = "wine_qc_borrador";
 
+/** Borrador de la edición de un lote guardado (se puede reanudar). */
+export function claveEdicion(loteId: string): string {
+  return `wine_qc_edicion_${loteId}`;
+}
+
 function dosDigitos(n: number): string {
   return String(n).padStart(2, "0");
 }
@@ -60,7 +65,10 @@ function normalizarRondas(guardadas: unknown, lecturas: number): string[][] {
 
 /** Ids de todas las fotos referenciadas por el borrador. */
 export function fotosDelBorrador(b: BorradorLote): string[] {
-  return Object.values(b.cajas.parametros).flatMap((p) => p.fotoIds);
+  return [
+    ...b.carga.observaciones.flatMap((o) => o.fotoIds ?? []),
+    ...Object.values(b.cajas.parametros).flatMap((p) => p.fotoIds),
+  ];
 }
 
 export function crearBorradorVacio(): BorradorLote {
@@ -83,16 +91,16 @@ export function crearBorradorVacio(): BorradorLote {
     muestreo: { filas: [], pesoBolsaG: "" },
     cajas: { parametros: parametrosVacios(), decisionEnologia: "", materiaExtranaKg: "", uvaDaniadaKg: "" },
     brix: { rondas: rondasVacias(LECTURAS_POR_RONDA.brix) },
-    ph: { rondas: rondasVacias(LECTURAS_POR_RONDA.ph), temperaturaJugo: "" },
+    ph: { rondas: rondasVacias(LECTURAS_POR_RONDA.ph) },
     acidez: { pendiente: false, metodo: "", puntoFinal: "", valor: "", confirmado: null },
-    decision: { estado: null, nombre: "", destino: "", motivo: "" },
+    decision: { estado: null, nombre: "", rol: "", destino: "", motivo: "" },
   };
 }
 
 /** Devuelve el borrador guardado, o null si no hay uno válido. */
-export function cargarBorrador(): BorradorLote | null {
+export function cargarBorrador(clave: string = CLAVE_BORRADOR): BorradorLote | null {
   try {
-    const raw = localStorage.getItem(CLAVE_BORRADOR);
+    const raw = localStorage.getItem(clave);
     if (!raw) return null;
     const guardado = JSON.parse(raw) as Partial<BorradorLote>;
     if (guardado.esquema !== BORRADOR_ESQUEMA) return null;
@@ -103,7 +111,12 @@ export function cargarBorrador(): BorradorLote | null {
       ...guardado,
       checks: { ...guardado.checks },
       identificacion: { ...vacio.identificacion, ...guardado.identificacion },
-      carga: { ...vacio.carga, ...guardado.carga },
+      carga: {
+        ...vacio.carga,
+        ...guardado.carga,
+        // Borradores anteriores a las fotos de carga no tienen `fotoIds`.
+        observaciones: (guardado.carga?.observaciones ?? []).map((o) => ({ ...o, fotoIds: o.fotoIds ?? [] })),
+      },
       pesado: { ...vacio.pesado, ...guardado.pesado },
       muestreo: { ...vacio.muestreo, ...guardado.muestreo },
       cajas: {
@@ -124,23 +137,26 @@ export function cargarBorrador(): BorradorLote | null {
       },
       acidez: { ...vacio.acidez, ...guardado.acidez },
       decision: { ...vacio.decision, ...guardado.decision },
+      ...(guardado.edicion
+        ? { edicion: Object.assign({ por: "", rol: "", motivo: "", trituracionInformada: false }, guardado.edicion) }
+        : {}),
     };
   } catch {
     return null;
   }
 }
 
-export function guardarBorrador(b: BorradorLote): void {
+export function guardarBorrador(b: BorradorLote, clave: string = CLAVE_BORRADOR): void {
   try {
-    localStorage.setItem(CLAVE_BORRADOR, JSON.stringify(b));
+    localStorage.setItem(clave, JSON.stringify(b));
   } catch {
     // Sin espacio o almacenamiento bloqueado: el asistente sigue funcionando en memoria.
   }
 }
 
-export function borrarBorrador(): void {
+export function borrarBorrador(clave: string = CLAVE_BORRADOR): void {
   try {
-    localStorage.removeItem(CLAVE_BORRADOR);
+    localStorage.removeItem(clave);
   } catch {
     // ignorar
   }

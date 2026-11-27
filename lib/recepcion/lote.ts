@@ -4,9 +4,10 @@
 // y acciones del detalle (completar pendientes, cambiar estado).
 // Funciones puras: la fecha y el id los pasa quien llama.
 // ============================================================
-import { DECIMALES, LIMITES_ENTRADA, RANGOS } from "@/lib/config/recepcion";
+import { DECIMALES, DESCUENTOS_PESO_DISPONIBLE, LIMITES_ENTRADA, RANGOS } from "@/lib/config/recepcion";
+import { ROL_ENOLOGIA, type Rol } from "@/lib/config/roles";
 import { CHECK_FINAL, PARAMETROS_VISUALES } from "@/lib/config/recepcion-textos";
-import { listaCorta, porcentajeSobre, temperaturaConforme } from "./evaluacion";
+import { listaCorta, porcentajeSobre, temperaturaConforme, validarTaraJaba } from "./evaluacion";
 import {
   estadoPaso3,
   estadoPaso4,
@@ -17,7 +18,16 @@ import {
   numJabasValido,
   type EstadoPaso,
 } from "./pasos";
-import type { BorradorLote, EstadoLote, JabaPesada, LoteV2, Motivo, Ronda } from "./tipos";
+import type {
+  BorradorLote,
+  CambioBitacora,
+  EstadoLote,
+  JabaPesada,
+  LoteV2,
+  Motivo,
+  PesoDisponible,
+  Ronda,
+} from "./tipos";
 import { formatear, redondear, validarNumero } from "./validacion";
 
 export const NOMBRE_ESTADO: Record<EstadoLote, string> = {
@@ -85,7 +95,11 @@ export function construirLote(b: BorradorLote, id: string, ahora: string): LoteV
         b.carga.hayObservaciones === true
           ? b.carga.observaciones
               .filter((o) => o.descripcion.trim() !== "")
-              .map((o) => ({ jaba: validarNumero(o.jaba, { min: 1, entero: true }).valor ?? 0, descripcion: o.descripcion.trim() }))
+              .map((o) => ({
+                jaba: validarNumero(o.jaba, { min: 1, entero: true }).valor ?? 0,
+                descripcion: o.descripcion.trim(),
+                fotoIds: o.fotoIds ?? [],
+              }))
           : [],
     },
     pesado: { usoFuncionTara: usoTara, jabas, pesoNetoTotal: 0, parcial: false },
@@ -122,7 +136,6 @@ export function construirLote(b: BorradorLote, id: string, ahora: string): LoteV
     ph: {
       rondas: e7.rondas.rondas.slice(0, e7.rondas.rondasUsadas).map((r) => aRonda(r, true)),
       conforme: e7.rondas.resultado === "conforme",
-      ...(e7.temperaturaJugo !== null ? { temperaturaJugo: e7.temperaturaJugo } : {}),
     },
     acidez: a.pendiente
       ? { metodo: "", puntoFinal: "", valor: null, pendiente: true, conforme: null }
@@ -138,6 +151,8 @@ export function construirLote(b: BorradorLote, id: string, ahora: string): LoteV
     estadoSugerido: "RETENIDO",
     motivos: [],
     historial: [],
+    bitacora: [],
+    pesoDisponible: { kg: 0, provisional: false, descuentos: { materiaExtranaKg: 0, uvaDaniadaKg: 0, bolsaMuestraKg: 0 } },
     pesoNeto: 0,
     brixPromedio: null,
     phPromedio: null,
@@ -176,6 +191,14 @@ export function recalcularLote(l: LoteV2): LoteV2 {
   const sinMotivos: LoteV2 = {
     ...l,
     pesado: { ...l.pesado, pesoNetoTotal, parcial },
+    pesoDisponible: calcularPesoDisponible(
+      pesoNetoTotal,
+      parcial,
+      l.cajas.materiaExtranaKg,
+      l.cajas.uvaDaniadaKg,
+      l.muestreo.pesoBolsaBayasG,
+    ),
+    bitacora: l.bitacora ?? [],
     cajas: {
       ...l.cajas,
       contenidoInspeccionadoKg: contenido,
@@ -193,6 +216,50 @@ export function recalcularLote(l: LoteV2): LoteV2 {
   return { ...sinMotivos, motivos, estadoSugerido: sugerirEstado(motivos) };
 }
 
+/**
+ * Peso disponible = neto total − materia extraña − uva dañada − bolsa de muestra (g ÷ 1000),
+ * con los descuentos activados en la configuración. Es provisional si hay taras pendientes.
+ */
+export function calcularPesoDisponible(
+  netoTotal: number,
+  parcial: boolean,
+  materiaExtranaKg: number,
+  uvaDaniadaKg: number,
+  bolsaG: number,
+): PesoDisponible {
+  const d = DESCUENTOS_PESO_DISPONIBLE;
+  const descuentos = {
+    materiaExtranaKg: d.materiaExtrana ? redondear(materiaExtranaKg) : 0,
+    uvaDaniadaKg: d.uvaDaniada ? redondear(uvaDaniadaKg) : 0,
+    bolsaMuestraKg: d.bolsaMuestra ? redondear(bolsaG / 1000) : 0,
+  };
+  const kg = redondear(netoTotal - descuentos.materiaExtranaKg - descuentos.uvaDaniadaKg - descuentos.bolsaMuestraKg);
+  return { kg: Math.max(0, kg), provisional: parcial, descuentos };
+}
+
+/** Lotes v2 guardados antes de estos campos: los completa al leerlos. */
+export function normalizarLoteV2(l: LoteV2): LoteV2 {
+  if (l.pesoDisponible && l.bitacora) return l;
+  return {
+    ...l,
+    bitacora: l.bitacora ?? [],
+    pesoDisponible:
+      l.pesoDisponible ??
+      calcularPesoDisponible(
+        l.pesado.pesoNetoTotal,
+        l.pesado.parcial,
+        l.cajas.materiaExtranaKg,
+        l.cajas.uvaDaniadaKg,
+        l.muestreo.pesoBolsaBayasG,
+      ),
+  };
+}
+
+export function textoPesoDisponible(p: PesoDisponible | undefined): string {
+  if (!p) return "—";
+  return `${formatear(p.kg, DECIMALES.kg)} kg${p.provisional ? " (provisional)" : ""}`;
+}
+
 function textoRango(r: { min: number; max: number }, dec: number, unidad = ""): string {
   return `${formatear(r.min, dec)}–${formatear(r.max, dec)}${unidad}`;
 }
@@ -200,6 +267,12 @@ function textoRango(r: { min: number; max: number }, dec: number, unidad = ""): 
 /** Cada no conformidad del lote, con el paso donde ocurrió. */
 export function calcularMotivos(l: LoteV2): Motivo[] {
   const m: Motivo[] = [];
+
+  // Edición posterior de un lote LIBERADO: queda hasta una nueva decisión firmada.
+  if (l.retenidoPorEdicion) {
+    const r = l.retenidoPorEdicion;
+    m.push({ paso: 9, parametro: "Edición posterior", detalle: `${r.motivo} (${r.por}, ${r.rol})`, tipo: "observacion" });
+  }
 
   // Paso 3
   for (const o of l.carga.observaciones) {
@@ -287,7 +360,10 @@ export interface EstadoPaso9 extends EstadoPaso {
   /** Estado que se guardará (el elegido si está permitido; si no, el sugerido). */
   elegido: EstadoLote;
   permitidos: Record<EstadoLote, boolean>;
-  errores: { nombre?: string; destino?: string; motivo?: string };
+  errores: { nombre?: string; rol?: string; destino?: string; motivo?: string };
+  /** Peso disponible que se entregará a Trituración (vista previa). */
+  pesoDisponible: PesoDisponible;
+  pesoNetoTotal: number;
 }
 
 export function estadosPermitidos(motivos: Motivo[]): Record<EstadoLote, boolean> {
@@ -297,11 +373,15 @@ export function estadosPermitidos(motivos: Motivo[]): Record<EstadoLote, boolean
 }
 
 /** Errores de los campos de firma según el estado. */
-export function validarFirma(estado: EstadoLote, d: Pick<Decision, "nombre" | "destino" | "motivo">): EstadoPaso9["errores"] {
+export function validarFirma(
+  estado: EstadoLote,
+  d: Pick<Decision, "nombre" | "destino" | "motivo"> & { rol?: Rol | "" },
+): EstadoPaso9["errores"] {
   const e: EstadoPaso9["errores"] = {};
   const req = "Obligatorio";
   if (estado === "LIBERADO") {
     if (!d.nombre.trim()) e.nombre = req;
+    if (!d.rol) e.rol = req;
     if (!d.destino.trim()) e.destino = req;
   } else if (estado === "RECHAZADO") {
     if (!d.nombre.trim()) e.nombre = req;
@@ -324,7 +404,7 @@ export function estadoPaso9(b: BorradorLote, opciones: { codigoDuplicado: boolea
     faltantes.push(`El código de lote «${b.identificacion.codigoLote.trim()}» ya existe: cámbielo en el paso 1`);
   }
   if (elegido === "LIBERADO" && Object.keys(errores).length) {
-    faltantes.push("Complete la disposición: Autorizado por y Destino");
+    faltantes.push("Complete la disposición: Autorizado por, Rol y Destino");
   }
   if (elegido === "RECHAZADO" && Object.keys(errores).length) {
     faltantes.push("Complete los datos de Enología: Confirmado por, Motivo y Destino");
@@ -333,7 +413,17 @@ export function estadoPaso9(b: BorradorLote, opciones: { codigoDuplicado: boolea
   if (marcados < CHECK_FINAL.length) {
     faltantes.push(`Marque todos los ítems de la lista de verificación final (${marcados} de ${CHECK_FINAL.length})`);
   }
-  return { valido: faltantes.length === 0, faltantes, motivos, sugerido, elegido, permitidos, errores };
+  return {
+    valido: faltantes.length === 0,
+    faltantes,
+    motivos,
+    sugerido,
+    elegido,
+    permitidos,
+    errores,
+    pesoDisponible: previo.pesoDisponible,
+    pesoNetoTotal: previo.pesoNeto,
+  };
 }
 
 /** Aplica la decisión del paso 9 a un lote recién construido. */
@@ -342,14 +432,19 @@ export function aplicarDecision(lote: LoteV2, estado: EstadoLote, d: Decision, a
   const destino = d.destino.trim();
   const motivo = d.motivo.trim();
   const out: LoteV2 = { ...lote, estado };
-  if (estado === "LIBERADO") out.disposicion = { nombre, destino, fecha: ahora };
-  if (estado === "RECHAZADO") out.enologia = { nombre, destino, motivo, fecha: ahora };
-  if (estado === "RETENIDO" && nombre) out.responsable = nombre;
+  const rol: Rol | undefined = estado === "RECHAZADO" ? ROL_ENOLOGIA : d.rol ? d.rol : undefined;
+  if (estado === "LIBERADO") out.disposicion = { nombre, rol, destino, fecha: ahora };
+  if (estado === "RECHAZADO") out.enologia = { nombre, rol, destino, motivo, fecha: ahora };
+  if (estado === "RETENIDO" && nombre) {
+    out.responsable = nombre;
+    if (rol) out.responsableRol = rol;
+  }
   out.historial = [
     {
       estado,
       fecha: ahora,
       por: nombre || "Recepción",
+      ...(rol ? { rol } : {}),
       nota: estado === "RECHAZADO" ? `Registro inicial. Motivo: ${motivo}` : "Registro inicial",
     },
   ];
@@ -359,25 +454,37 @@ export function aplicarDecision(lote: LoteV2, estado: EstadoLote, d: Decision, a
 // ─────────────────────────────────────────
 // Detalle: completar pendientes y cambiar estado
 // ─────────────────────────────────────────
-/** Valida la tara de una jaba con tara pendiente (debe ser > 0 y menor que el peso lleno). */
+/** Valida la tara de una jaba con tara pendiente (mismas reglas que el paso 3, incluido el neto máximo). */
 export function validarTara(texto: string, pesoLleno: number) {
-  const v = validarNumero(texto, LIMITES_ENTRADA.taraKg);
-  if (v.valor !== null && v.valor >= pesoLleno) {
-    return { ...v, valor: null, error: "La tara debe ser menor que el peso lleno" };
-  }
-  return v;
+  const t = validarTaraJaba(texto, pesoLleno);
+  return { valor: t.neto === null ? null : t.tara, error: t.error, vacio: t.vacio };
 }
 
-/** Completa la tara de las jabas indicadas (N° → kg). */
-export function completarTaras(l: LoteV2, taras: Record<number, number>, por: string, ahora: string): LoteV2 {
-  const numeros = Object.keys(taras).map(Number);
+/** Quien registra una acción rápida (completar pendientes). */
+export interface FirmaAccion {
+  nombre: string;
+  rol: Rol;
+}
+
+const kgTxt = (n: number | null | undefined) => (n === null || n === undefined ? "—" : `${formatear(n, DECIMALES.kg)} kg`);
+
+/** Completa la tara de las jabas indicadas (N° → kg). Queda en el historial y en la bitácora. */
+export function completarTaras(l: LoteV2, taras: Record<number, number>, firma: FirmaAccion, ahora: string): LoteV2 {
+  const numeros = Object.keys(taras)
+    .map(Number)
+    .sort((a, b) => a - b);
   const jabas = l.pesado.jabas.map((j) => {
     const t = taras[j.numero];
     if (t === undefined || !j.taraPendiente) return j;
     return { ...j, tara: t, neto: redondear(j.pesoLleno - t), taraPendiente: false };
   });
   const nuevo = recalcularLote({ ...l, pesado: { ...l.pesado, jabas } });
-  return conHistorial(nuevo, por, ahora, `Tara completada: jaba${numeros.length > 1 ? "s" : ""} N° ${listaCorta(numeros.sort((a, b) => a - b), 10)}`);
+  const cambios: CambioSinFirma[] = numeros.map((n) => ({ campo: `Jaba N° ${n} · tara`, anterior: "Pendiente", nuevo: kgTxt(taras[n]) }));
+  const antes = textoPesoDisponible(l.pesoDisponible);
+  const despues = textoPesoDisponible(nuevo.pesoDisponible);
+  if (antes !== despues) cambios.push({ campo: "Peso disponible", anterior: antes, nuevo: despues });
+  const nota = `Tara completada: jaba${numeros.length > 1 ? "s" : ""} N° ${listaCorta(numeros, 10)}`;
+  return conBitacora(conHistorial(nuevo, firma, ahora, nota), cambios, firma, "Completar tara pendiente", ahora);
 }
 
 export interface DatosAcidez {
@@ -388,7 +495,7 @@ export interface DatosAcidez {
   confirmadoPorLab?: boolean;
 }
 
-export function completarAcidez(l: LoteV2, d: DatosAcidez, por: string, ahora: string): LoteV2 {
+export function completarAcidez(l: LoteV2, d: DatosAcidez, firma: FirmaAccion, ahora: string): LoteV2 {
   const conforme = d.valor >= RANGOS.acidez.min && d.valor <= RANGOS.acidez.max;
   const nuevo = recalcularLote({
     ...l,
@@ -401,7 +508,27 @@ export function completarAcidez(l: LoteV2, d: DatosAcidez, por: string, ahora: s
       ...(conforme ? {} : { confirmadoPorLab: d.confirmadoPorLab === true }),
     },
   });
-  return conHistorial(nuevo, por, ahora, `Acidez registrada: ${formatear(d.valor, DECIMALES.acidez)} g/L`);
+  const a = l.acidez;
+  const acTxt = (v: number | null) => (v === null ? "—" : `${formatear(v, DECIMALES.acidez)} g/L`);
+  const cambios: CambioSinFirma[] = [
+    { campo: "Acidez · valor", anterior: a.pendiente ? "Pendiente" : acTxt(a.valor), nuevo: acTxt(d.valor) },
+    { campo: "Acidez · método", anterior: a.metodo || "—", nuevo: d.metodo.trim() },
+    { campo: "Acidez · punto final", anterior: a.puntoFinal || "—", nuevo: d.puntoFinal.trim() },
+  ];
+  if (!conforme) {
+    cambios.push({
+      campo: "Acidez · confirmada por el laboratorio",
+      anterior: a.confirmadoPorLab ? "Sí" : "No",
+      nuevo: d.confirmadoPorLab ? "Sí" : "No",
+    });
+  }
+  return conBitacora(
+    conHistorial(nuevo, firma, ahora, `Acidez registrada: ${acTxt(d.valor)}`),
+    cambios.filter((c) => c.anterior !== c.nuevo),
+    firma,
+    a.pendiente ? "Completar acidez pendiente" : "Confirmación de acidez del laboratorio",
+    ahora,
+  );
 }
 
 export type AccionEstado = "liberar" | "liberarConObservaciones" | "rechazar";
@@ -434,13 +561,16 @@ export function accionesDisponibles(l: LoteV2): Record<AccionEstado, { permitido
 export function cambiarEstado(
   l: LoteV2,
   accion: AccionEstado,
-  d: Pick<Decision, "nombre" | "destino" | "motivo">,
+  d: Pick<Decision, "nombre" | "destino" | "motivo"> & { rol?: Rol | "" },
   ahora: string,
 ): LoteV2 {
   const disp = accionesDisponibles(l)[accion];
   if (!disp.permitido) throw new Error(disp.razon ?? "Acción no permitida");
-  const firma = { nombre: d.nombre.trim(), destino: d.destino.trim(), fecha: ahora };
+  const rol: Rol = accion === "liberar" ? d.rol || "Producción" : ROL_ENOLOGIA;
+  const firma = { nombre: d.nombre.trim(), rol, destino: d.destino.trim(), fecha: ahora };
   const motivo = d.motivo.trim();
+  // La nueva decisión firmada cierra la retención por edición posterior.
+  if (l.retenidoPorEdicion) l = recalcularLote({ ...l, retenidoPorEdicion: undefined });
   let out: LoteV2;
   let nota: string;
   if (accion === "liberar") {
@@ -453,18 +583,39 @@ export function cambiarEstado(
     out = { ...l, estado: "RECHAZADO", enologia: { ...firma, motivo } };
     nota = `Rechazado por Enología. Motivo: ${motivo}. Destino: ${firma.destino}`;
   }
-  return conHistorial(out, firma.nombre, ahora, nota);
+  return conHistorial(out, firma, ahora, nota);
 }
 
 /** Validación de la firma de una acción del detalle. */
-export function validarFirmaAccion(accion: AccionEstado, d: Pick<Decision, "nombre" | "destino" | "motivo">) {
+export function validarFirmaAccion(
+  accion: AccionEstado,
+  d: Pick<Decision, "nombre" | "destino" | "motivo"> & { rol?: Rol | "" },
+) {
   return validarFirma(accion === "liberar" ? "LIBERADO" : "RECHAZADO", d);
 }
 
-function conHistorial(l: LoteV2, por: string, ahora: string, nota: string): LoteV2 {
+export function conHistorial(l: LoteV2, firma: { nombre: string; rol?: Rol }, ahora: string, nota: string): LoteV2 {
   return {
     ...l,
     updatedAt: ahora,
-    historial: [...l.historial, { estado: l.estado, fecha: ahora, por: por.trim() || "—", nota }],
+    historial: [
+      ...l.historial,
+      { estado: l.estado, fecha: ahora, por: firma.nombre.trim() || "—", ...(firma.rol ? { rol: firma.rol } : {}), nota },
+    ],
   };
+}
+
+export type CambioSinFirma = Omit<CambioBitacora, "por" | "rol" | "motivo" | "fecha">;
+
+/** Agrega cambios a la bitácora con la firma y el motivo. La bitácora solo crece. */
+export function conBitacora(l: LoteV2, cambios: CambioSinFirma[], firma: FirmaAccion, motivo: string, ahora: string): LoteV2 {
+  if (cambios.length === 0) return l;
+  const entradas: CambioBitacora[] = cambios.map((c) => ({
+    ...c,
+    por: firma.nombre.trim(),
+    rol: firma.rol,
+    motivo: motivo.trim(),
+    fecha: ahora,
+  }));
+  return { ...l, bitacora: [...(l.bitacora ?? []), ...entradas] };
 }

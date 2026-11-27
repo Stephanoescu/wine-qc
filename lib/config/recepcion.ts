@@ -22,10 +22,28 @@ export const RANGOS = {
  * como "físicamente imposible" (distinto de "fuera de rango").
  * `minExclusivo: true` significa que el mínimo no está permitido (> min).
  */
+/** Peso NETO máximo de uva por jaba (kg). Con la función TARA, la lectura ya es el neto. */
+export const PESO_MAX_JABA_KG = 25;
+
+/** Tara máxima de una jaba vacía (kg). Con tara pendiente, el peso lleno admite hasta 25 + 5 kg. */
+export const TARA_MAX_KG = 5;
+
+/**
+ * Peso disponible que Recepción entrega a Trituración:
+ * neto total − los descuentos activados aquí. La bodega puede ajustarlos.
+ */
+export const DESCUENTOS_PESO_DISPONIBLE = {
+  materiaExtrana: true,
+  uvaDaniada: true,
+  /** Peso de la bolsa de muestra (g ÷ 1000). */
+  bolsaMuestra: true,
+} as const;
+
 export const LIMITES_ENTRADA = {
   numJabas: { min: 1, max: 10000, entero: true },
-  pesoJabaKg: { min: 0, max: 100, minExclusivo: true },
-  taraKg: { min: 0, max: 100, minExclusivo: true },
+  /** Lectura de la balanza (lleno). Tope físico: neto máximo + tara máxima. */
+  pesoJabaKg: { min: 0, max: PESO_MAX_JABA_KG + TARA_MAX_KG, minExclusivo: true },
+  taraKg: { min: 0, max: TARA_MAX_KG, minExclusivo: true },
   temperaturaC: { min: -5, max: 50 },
   pesoBolsaBayasG: { min: 0, max: 5000, minExclusivo: true },
   separadoKg: { min: 0, max: 100000 },

@@ -15,20 +15,18 @@ import type { EstadoPaso7 } from "@/lib/recepcion/pasos";
 import type { BorradorLote } from "@/lib/recepcion/tipos";
 import { formatear } from "@/lib/recepcion/validacion";
 import { RondasMedicion } from "./RondasMedicion";
-import { Checklist, FormField, NumeroInput, SectionCard } from "./WizardUI";
+import { Checklist, SectionCard } from "./WizardUI";
 
 export function Paso7PH({
   borrador,
   estado,
   onToggle,
   onLectura,
-  onTemperaturaJugo,
 }: {
   borrador: BorradorLote;
   estado: EstadoPaso7;
   onToggle: (id: string) => void;
   onLectura: (ronda: number, indice: number, valor: string) => void;
-  onTemperaturaJugo: (valor: string) => void;
 }) {
   return (
     <div className="flex flex-col gap-6">
@@ -59,21 +57,6 @@ export function Paso7PH({
               texto: avisoDiferenciaPh(formatear(PH_DIFERENCIA_AVISO, 2, 1)),
             }}
           />
-          <div className="sm:max-w-xs">
-            <FormField
-              label="Temperatura del jugo (°C)"
-              error={estado.errorTemperaturaJugo}
-              ayuda="Opcional: anótela si el medidor la muestra"
-            >
-              <NumeroInput
-                unidad="°C"
-                placeholder="—"
-                value={borrador.ph.temperaturaJugo}
-                onChange={onTemperaturaJugo}
-                error={estado.errorTemperaturaJugo}
-              />
-            </FormField>
-          </div>
         </div>
       </SectionCard>
 

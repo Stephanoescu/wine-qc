@@ -13,7 +13,8 @@ import {
 import { nuevoId } from "@/lib/recepcion/borrador";
 import { FILA_JABA_VACIA, listaCorta } from "@/lib/recepcion/evaluacion";
 import type { EstadoPaso3 } from "@/lib/recepcion/pasos";
-import type { BorradorLote, FilaJaba } from "@/lib/recepcion/tipos";
+import type { BorradorLote, FilaJaba, FilaObsCarga } from "@/lib/recepcion/tipos";
+import { FotosCampo } from "@/components/lote/FotosCampo";
 import { formatear } from "@/lib/recepcion/validacion";
 import { Aviso, Checklist, Interruptor, NumeroInput, SectionCard, SiNo, StyledInput } from "./WizardUI";
 
@@ -23,6 +24,12 @@ interface Paso3Props {
   numJabas: number;
   onToggle: (id: string) => void;
   onCarga: (carga: BorradorLote["carga"]) => void;
+  /** Agrega fotos a una observación (debe usar actualización funcional: la carga es asíncrona). */
+  onAgregarFotosObservacion: (id: string, fotoIds: string[]) => void;
+  /** Quita una foto de una observación y la descarta. */
+  onQuitarFotoObservacion: (id: string, fotoId: string) => void;
+  /** Quita una fila de observación y descarta sus fotos. */
+  onQuitarObservacion: (id: string) => void;
   onUsoTara: (activo: boolean) => void;
   /** Actualiza la jaba de índice `i` (N° i+1). Debe ser estable (useCallback). */
   onJaba: (i: number, cambios: Partial<FilaJaba>) => void;
@@ -34,6 +41,9 @@ export function Paso3CargaPesado({
   numJabas,
   onToggle,
   onCarga,
+  onAgregarFotosObservacion,
+  onQuitarFotoObservacion,
+  onQuitarObservacion,
   onUsoTara,
   onJaba,
 }: Paso3Props) {
@@ -53,6 +63,9 @@ export function Paso3CargaPesado({
                   numJabas={numJabas}
                   errores={estado.erroresObs}
                   onChange={onCarga}
+                  onAgregarFotos={onAgregarFotosObservacion}
+                  onQuitarFoto={onQuitarFotoObservacion}
+                  onQuitar={onQuitarObservacion}
                 />
               ),
             }}
@@ -103,13 +116,19 @@ function ObservacionesCarga({
   numJabas,
   errores,
   onChange,
+  onAgregarFotos,
+  onQuitarFoto,
+  onQuitar,
 }: {
   carga: BorradorLote["carga"];
   numJabas: number;
   errores: EstadoPaso3["erroresObs"];
   onChange: (carga: BorradorLote["carga"]) => void;
+  onAgregarFotos: Paso3Props["onAgregarFotosObservacion"];
+  onQuitarFoto: Paso3Props["onQuitarFotoObservacion"];
+  onQuitar: Paso3Props["onQuitarObservacion"];
 }) {
-  const filaNueva = () => ({ id: nuevoId(), jaba: "", descripcion: "" });
+  const filaNueva = (): FilaObsCarga => ({ id: nuevoId(), jaba: "", descripcion: "", fotoIds: [] });
 
   function setHay(v: boolean) {
     const observaciones = v && carga.observaciones.length === 0 ? [filaNueva()] : carga.observaciones;
@@ -157,9 +176,10 @@ function ObservacionesCarga({
                 </button>
                 <button
                   type="button"
-                  onClick={() =>
-                    onChange({ ...carga, observaciones: carga.observaciones.filter((x) => x.id !== o.id) })
-                  }
+                  onClick={() => {
+                    if (o.fotoIds.length > 0 && !confirm("Se eliminarán también las fotos de esta observación. ¿Continuar?")) return;
+                    onQuitar(o.id);
+                  }}
                   className="p-2 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 border border-transparent hover:border-red-100 transition-colors"
                   title="Quitar observación"
                   aria-label={`Quitar observación ${i + 1}`}
@@ -177,6 +197,12 @@ function ObservacionesCarga({
                   className="py-2!"
                 />
               </div>
+              <FotosCampo
+                nombre={`la observación ${i + 1}`}
+                fotoIds={o.fotoIds}
+                onAgregar={(ids) => onAgregarFotos(o.id, ids)}
+                onQuitar={(fotoId) => onQuitarFoto(o.id, fotoId)}
+              />
             </div>
           ))}
           <button
