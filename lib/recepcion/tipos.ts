@@ -86,6 +86,7 @@ export interface LoteV2 {
   muestreo: { jabasSeleccionadas: number[]; temperaturas: LecturaTemp[]; pesoBolsaBayasG: number };
   cajas: {
     parametros: ParamVisual[];
+    /** Obligatoria si se observó algún parámetro. */
     decisionEnologia?: string;
     materiaExtranaKg: number;
     uvaDaniadaKg: number;
@@ -115,6 +116,8 @@ export interface LoteV2 {
   /** RECHAZADO, o liberación con observaciones (motivo obligatorio). */
   enologia?: Firma;
   liberadoConObservaciones?: boolean;
+  /** RETENIDO en el asistente: quién registró (opcional). */
+  responsable?: string;
   historial: EntradaHistorial[];
   // Copias para la tabla de /reportes
   pesoNeto: number;
@@ -228,4 +231,10 @@ export interface BorradorLote {
     /** Respuesta a "¿El laboratorio confirmó el valor?" (solo fuera de rango). */
     confirmado: boolean | null;
   };
+  /**
+   * Paso 9. `estado` null = usar el sugerido. Los campos de firma se reutilizan
+   * según el estado: LIBERADO → Autorizado por + Destino; RECHAZADO →
+   * Confirmado por (Enología) + Motivo + Destino; RETENIDO → responsable opcional.
+   */
+  decision: { estado: EstadoLote | null; nombre: string; destino: string; motivo: string };
 }

@@ -2,7 +2,8 @@
 
 import React, { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { ArrowLeft, Hourglass, RotateCcw } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { ArrowLeft, RotateCcw } from "lucide-react";
 import { PASOS_ASISTENTE } from "@/lib/config/recepcion-textos";
 import {
   borrarBorrador,
@@ -13,7 +14,9 @@ import {
   nuevoId,
 } from "@/lib/recepcion/borrador";
 import { asegurarSeleccion, FILA_JABA_VACIA, filasMuestraNuevas } from "@/lib/recepcion/evaluacion";
+import { existeCodigo, saveLote } from "@/lib/recepcion/almacen";
 import { borrarFotos } from "@/lib/recepcion/fotos";
+import { aplicarDecision, construirLote, estadoPaso9 } from "@/lib/recepcion/lote";
 import {
   estadoPaso1,
   estadoPaso2,
@@ -34,7 +37,7 @@ import type {
   ParamVisualBorrador,
 } from "@/lib/recepcion/tipos";
 import { useEsCliente } from "@/lib/use-es-cliente";
-import { Aviso, NavButtons, SectionCard, WizardProgress } from "@/components/recepcion/WizardUI";
+import { Aviso, NavButtons, WizardProgress } from "@/components/recepcion/WizardUI";
 import { Paso1Identificacion } from "@/components/recepcion/Paso1Identificacion";
 import { Paso2Instrumentos } from "@/components/recepcion/Paso2Instrumentos";
 import { Paso3CargaPesado } from "@/components/recepcion/Paso3CargaPesado";
@@ -43,6 +46,7 @@ import { Paso5InspeccionCajas } from "@/components/recepcion/Paso5InspeccionCaja
 import { Paso6Brix } from "@/components/recepcion/Paso6Brix";
 import { Paso7PH } from "@/components/recepcion/Paso7PH";
 import { Paso8Acidez } from "@/components/recepcion/Paso8Acidez";
+import { Paso9Decision } from "@/components/recepcion/Paso9Decision";
 
 const TOTAL_PASOS = PASOS_ASISTENTE.length;
 
@@ -80,11 +84,14 @@ function AsistenteRecepcion() {
   });
   const [b, setB] = useState<BorradorLote>(inicio.borrador);
   const [mostrarRecuperado, setMostrarRecuperado] = useState(inicio.recuperado);
+  const [errorGuardado, setErrorGuardado] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const router = useRouter();
 
-  // Autosalvado del borrador en cada cambio.
+  // Autosalvado del borrador en cada cambio (salvo cuando ya se guardó el lote).
   useEffect(() => {
-    guardarBorrador(b);
-  }, [b]);
+    if (!guardando) guardarBorrador(b);
+  }, [b, guardando]);
 
   const paso = b.paso;
   const numJabas = numJabasValido(b.identificacion);
@@ -100,6 +107,7 @@ function AsistenteRecepcion() {
       }
       return siguiente;
     });
+    setErrorGuardado(null);
     window.scrollTo({ top: 0 });
   }, []);
 
@@ -177,6 +185,22 @@ function AsistenteRecepcion() {
     });
   }, []);
 
+  // ── Paso 9: guardar ──
+  function guardar(estadoFinal: ReturnType<typeof estadoPaso9>) {
+    if (guardando || !estadoFinal.valido) return;
+    const ahora = new Date().toISOString();
+    const id = nuevoId();
+    const lote = aplicarDecision(construirLote(b, id, ahora), estadoFinal.elegido, b.decision, ahora);
+    const r = saveLote(lote);
+    if (!r.ok) {
+      setErrorGuardado(r.error);
+      return;
+    }
+    setGuardando(true);
+    borrarBorrador();
+    router.push(`/reportes/${encodeURIComponent(id)}?nuevo=1`);
+  }
+
   function descartar() {
     if (!confirm("¿Descartar el registro en curso y empezar uno nuevo? Se perderán los datos ingresados.")) return;
     borrarFotos(fotosDelBorrador(b)).catch(() => {});
@@ -189,6 +213,7 @@ function AsistenteRecepcion() {
   // ── Contenido y validación del paso actual ──
   let contenido: React.ReactNode;
   let estado: EstadoPaso;
+  let estado9: ReturnType<typeof estadoPaso9> | null = null;
   switch (paso) {
     case 1: {
       const e = estadoPaso1(b.identificacion);
@@ -287,13 +312,24 @@ function AsistenteRecepcion() {
       contenido = <Paso8Acidez borrador={b} estado={e} onToggle={alternarCheck} onAcidez={actualizarAcidez} />;
       break;
     }
-    default:
-      estado = { valido: true, faltantes: [] };
+    default: {
+      const e = estadoPaso9(b, { codigoDuplicado: existeCodigo(b.identificacion.codigoLote) });
+      estado = e;
+      estado9 = e;
       contenido = (
-        <SectionCard title={PASOS_ASISTENTE[paso - 1]} subtitle="Disponible en la próxima fase" icon={Hourglass}>
-          <p className="text-sm text-slate-600 font-medium">Este paso está en construcción.</p>
-        </SectionCard>
+        <Paso9Decision
+          borrador={b}
+          estado={e}
+          onToggle={alternarCheck}
+          onDecision={(cambios) => {
+            setErrorGuardado(null);
+            setB((prev) => ({ ...prev, decision: { ...prev.decision, ...cambios } }));
+          }}
+          errorGuardado={errorGuardado}
+          onIrAPaso={irA}
+        />
       );
+    }
   }
 
   const esUltimo = paso === TOTAL_PASOS;
@@ -354,10 +390,12 @@ function AsistenteRecepcion() {
 
         <NavButtons
           onPrev={paso > 1 ? () => irA(paso - 1) : undefined}
-          onNext={() => irA(paso + 1)}
-          nextLabel={esUltimo ? "Guardar lote y generar informe" : `Siguiente — ${PASOS_ASISTENTE[paso]}`}
+          onNext={() => (esUltimo && estado9 ? guardar(estado9) : irA(paso + 1))}
+          nextLabel={
+            esUltimo ? (guardando ? "Guardando…" : "Guardar lote y generar informe") : `Siguiente — ${PASOS_ASISTENTE[paso]}`
+          }
           isLastStep={esUltimo}
-          disabledNext={!estado.valido || esUltimo}
+          disabledNext={!estado.valido || guardando}
           faltantes={estado.faltantes}
         />
       </main>

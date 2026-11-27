@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { ArrowRight, Wine } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 
 export default function LandingPage() {
   return (
@@ -31,6 +31,7 @@ export default function LandingPage() {
       {/* Top bar */}
       <div className="absolute top-0 left-0 right-0 flex items-center justify-between px-8 py-5">
         <div className="flex items-center">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
           <img src="/images/logo.png" alt="Logo" className="h-16 sm:h-20 w-auto object-contain drop-shadow-md" />
         </div>
       </div>

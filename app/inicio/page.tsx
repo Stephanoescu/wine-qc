@@ -86,16 +86,18 @@ export default function InicioPage() {
     <div className="min-h-screen bg-slate-50 flex flex-col">
       {/* Header */}
       <header className="border-b border-slate-200 bg-white/90 backdrop-blur-md sticky top-0 z-10 shadow-sm">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between gap-3">
           <div className="flex items-center gap-3">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/images/logo.png" alt="Logo" className="h-12 sm:h-14 w-auto object-contain" />
           </div>
           <Link
             href="/reportes"
-            className="hidden sm:flex items-center gap-2 px-4 py-2 rounded-lg border border-slate-200 text-sm text-marine font-medium hover:bg-slate-50 hover:border-marine/20 transition-colors"
+            className="flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg border border-slate-200 text-sm text-marine font-medium hover:bg-slate-50 hover:border-marine/20 transition-colors flex-shrink-0"
           >
             <BarChart3 className="w-4 h-4 text-marine-light" />
-            Ver reportes
+            <span className="sm:hidden">Reportes</span>
+            <span className="hidden sm:inline">Ver reportes</span>
           </Link>
         </div>
       </header>
@@ -140,7 +142,7 @@ export default function InicioPage() {
             href="/recepcion"
             icon={ClipboardList}
             title="Recepción y Evaluación de Uva"
-            description="Identificación, inspección visual y evaluación fisicoquímica de cada lote ingresado a bodega. Clasificación Poka-Yoke."
+            description="Identificación, pesado por jaba, muestreo, inspección con fotos y análisis de °Brix, pH y acidez. Decisión del lote: Liberado, Retenido o Rechazado."
             badge="Principal"
             primary
           />
@@ -177,9 +179,9 @@ export default function InicioPage() {
         {/* Stats footer */}
         <div className="mt-12 flex flex-wrap gap-0 divide-x divide-slate-200 rounded-2xl border border-slate-200 bg-white overflow-hidden shadow-sm">
           {[
-            { label: "Parámetros monitoreados", value: "7" },
-            { label: "Categorías de clasificación", value: "A · B · C" },
-            { label: "Límites Poka-Yoke", value: "5 visual + 2 fisico" },
+            { label: "Parámetros monitoreados", value: "10" },
+            { label: "Estados del lote", value: "Liberado · Retenido · Rechazado" },
+            { label: "Controles", value: "6 visuales + 4 medidos" },
             { label: "Norma de referencia", value: "AWRI" },
           ].map((s) => (
             <div key={s.label} className="flex-1 min-w-[140px] px-6 py-5">

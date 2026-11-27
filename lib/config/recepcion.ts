@@ -34,6 +34,12 @@ export const LIMITES_ENTRADA = {
   acidezGL: { min: 0, max: 30, minExclusivo: true },
 } as const;
 
+/**
+ * pH: si la diferencia entre la lectura mayor y la menor de una ronda supera
+ * este valor, se muestra un aviso informativo (no bloquea ni genera motivo).
+ */
+export const PH_DIFERENCIA_AVISO = 0.1;
+
 /** Lecturas por ronda en los pasos 6 (°Brix) y 7 (pH). */
 export const LECTURAS_POR_RONDA = { brix: 3, ph: 2 } as const;
 

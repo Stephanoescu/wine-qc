@@ -85,6 +85,7 @@ export function crearBorradorVacio(): BorradorLote {
     brix: { rondas: rondasVacias(LECTURAS_POR_RONDA.brix) },
     ph: { rondas: rondasVacias(LECTURAS_POR_RONDA.ph), temperaturaJugo: "" },
     acidez: { pendiente: false, metodo: "", puntoFinal: "", valor: "", confirmado: null },
+    decision: { estado: null, nombre: "", destino: "", motivo: "" },
   };
 }
 
@@ -122,6 +123,7 @@ export function cargarBorrador(): BorradorLote | null {
         rondas: normalizarRondas(guardado.ph?.rondas, LECTURAS_POR_RONDA.ph),
       },
       acidez: { ...vacio.acidez, ...guardado.acidez },
+      decision: { ...vacio.decision, ...guardado.decision },
     };
   } catch {
     return null;

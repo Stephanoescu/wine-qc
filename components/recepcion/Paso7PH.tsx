@@ -2,10 +2,11 @@
 
 import React from "react";
 import { FlaskConical, ShieldCheck } from "lucide-react";
-import { DECIMALES, RANGOS } from "@/lib/config/recepcion";
+import { DECIMALES, PH_DIFERENCIA_AVISO, RANGOS } from "@/lib/config/recepcion";
 import {
   AVISO_PH_RONDA1,
   AVISO_PH_RONDA2,
+  avisoDiferenciaPh,
   CHECK_ELECTRODO,
   CHECK_PH,
   ETIQUETAS_PH,
@@ -53,6 +54,10 @@ export function Paso7PH({
             avisoRonda1={AVISO_PH_RONDA1}
             avisoRonda2={AVISO_PH_RONDA2}
             mostrarDiferencia
+            avisoDiferencia={{
+              umbral: PH_DIFERENCIA_AVISO,
+              texto: avisoDiferenciaPh(formatear(PH_DIFERENCIA_AVISO, 1).replace(".", ",")),
+            }}
           />
           <div className="sm:max-w-xs">
             <FormField

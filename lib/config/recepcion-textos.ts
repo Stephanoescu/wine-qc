@@ -274,6 +274,9 @@ export const CHECK_PH: ItemChecklist[] = [
 
 export const AVISO_PH_RONDA1 =
   "Pida al laboratorio que revise el control del medidor y repita con dos porciones nuevas.";
+export function avisoDiferenciaPh(umbral: string): string {
+  return `Las lecturas difieren más de ${umbral}: verifique el enjuague y la estabilización del electrodo`;
+}
 export const AVISO_PH_RONDA2 = "Se confirma — Retenga el lote para Enología";
 
 export const CHECK_ELECTRODO: ItemChecklist[] = [

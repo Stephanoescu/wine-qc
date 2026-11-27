@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState } from "react";
 import { Camera, Eye, ImagePlus, Loader2, Recycle, Wind, X } from "lucide-react";
 import { DECIMALES, FOTOS } from "@/lib/config/recepcion";
 import {
@@ -11,7 +11,8 @@ import {
   type DefinicionParametroVisual,
 } from "@/lib/config/recepcion-textos";
 import { listaCorta } from "@/lib/recepcion/evaluacion";
-import { agregarFoto, obtenerFoto } from "@/lib/recepcion/fotos";
+import { agregarFoto } from "@/lib/recepcion/fotos";
+import { FotoMiniatura } from "@/components/lote/FotoMiniatura";
 import type { EstadoPaso5 } from "@/lib/recepcion/pasos";
 import type { BorradorLote, ClaveParametroVisual, ParamVisualBorrador } from "@/lib/recepcion/tipos";
 import { formatear } from "@/lib/recepcion/validacion";
@@ -394,47 +395,4 @@ function FotosParametro({
       )}
     </div>
   );
-}
-
-/** Muestra una foto guardada en IndexedDB. */
-export function FotoMiniatura({ id, alt, className }: { id: string; alt: string; className?: string }) {
-  const [url, setUrl] = useState<string | null>(null);
-  const [falla, setFalla] = useState(false);
-
-  useEffect(() => {
-    let activo = true;
-    let creada: string | null = null;
-    obtenerFoto(id)
-      .then((blob) => {
-        if (!activo) return;
-        if (!blob) {
-          setFalla(true);
-          return;
-        }
-        creada = URL.createObjectURL(blob);
-        setUrl(creada);
-      })
-      .catch(() => activo && setFalla(true));
-    return () => {
-      activo = false;
-      if (creada) URL.revokeObjectURL(creada);
-    };
-  }, [id]);
-
-  if (falla) {
-    return (
-      <span className="w-full h-full flex items-center justify-center text-[10px] text-slate-400 font-medium text-center p-1">
-        Foto no disponible
-      </span>
-    );
-  }
-  if (!url) {
-    return (
-      <span className="w-full h-full flex items-center justify-center">
-        <Loader2 className="w-4 h-4 text-slate-300 animate-spin" />
-      </span>
-    );
-  }
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={url} alt={alt} className={className} />;
 }

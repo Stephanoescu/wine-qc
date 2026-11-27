@@ -22,6 +22,7 @@ export function RondasMedicion({
   avisoRonda1,
   avisoRonda2,
   mostrarDiferencia,
+  avisoDiferencia,
 }: {
   /** "°Brix", "pH" (para etiquetas de accesibilidad y textos). */
   nombre: string;
@@ -39,6 +40,8 @@ export function RondasMedicion({
   avisoRonda1: string;
   avisoRonda2: string;
   mostrarDiferencia?: boolean;
+  /** Aviso informativo si la diferencia de una ronda supera `umbral` (no bloquea). */
+  avisoDiferencia?: { umbral: number; texto: string };
 }) {
   const { contenedor, alPresionarTecla } = useNavegacionEnter();
   const r1 = resultado.rondas[0];
@@ -61,6 +64,7 @@ export function RondasMedicion({
         textoRango={textoRango}
         mostrarDiferencia={mostrarDiferencia}
       />
+      <AvisoDiferencia ronda={r1} aviso={avisoDiferencia} />
 
       {r1.conforme === true && <BadgeConformidad estado="conforme" />}
 
@@ -82,12 +86,18 @@ export function RondasMedicion({
             mostrarDiferencia={mostrarDiferencia}
             destacada
           />
+          <AvisoDiferencia ronda={r2} aviso={avisoDiferencia} />
           {r2.conforme === true && <BadgeConformidad estado="conforme" texto="Conforme en la 2.ª ronda" />}
           {r2.conforme === false && <Aviso tono="error" titulo={avisoRonda2} />}
         </>
       )}
     </div>
   );
+}
+
+function AvisoDiferencia({ ronda, aviso }: { ronda: RondaEvaluada; aviso?: { umbral: number; texto: string } }) {
+  if (!aviso || ronda.diferencia === null || ronda.diferencia <= aviso.umbral) return null;
+  return <Aviso tono="info" titulo={aviso.texto} />;
 }
 
 function BloqueRonda({

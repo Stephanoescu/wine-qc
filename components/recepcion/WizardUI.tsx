@@ -554,30 +554,3 @@ export function NavButtons({
     </div>
   );
 }
-
-// ─────────────────────────────────────────
-// Value Range Indicator
-// ─────────────────────────────────────────
-export function ValueIndicator({ value, min, max }: { value: number; min: number; max: number }) {
-  const pct = Math.max(0, Math.min(100, ((value - min) / (max - min)) * 100));
-  const isOk = value >= min && value <= max;
-
-  return (
-    <div className="flex flex-col gap-2 mt-4 p-5 rounded-xl border border-slate-200 bg-slate-50">
-      <div className="flex justify-between text-xs font-bold text-slate-500 uppercase tracking-wider">
-        <span>Min {min}</span>
-        <span className={isOk ? "text-marine" : "text-red-600"}>Promedio: {value.toFixed(2)}</span>
-        <span>Max {max}</span>
-      </div>
-      <div className="relative h-2.5 bg-slate-200 rounded-full overflow-hidden">
-        <div className="absolute top-0 bottom-0 left-0 right-0 bg-emerald-100/50" />
-        <div
-          className={`absolute top-0 bottom-0 w-1.5 -ml-[3px] rounded-full transition-all duration-500 z-10 ${
-            isOk ? "bg-marine shadow-[0_0_8px_rgba(17,41,76,0.8)]" : "bg-red-600 shadow-[0_0_8px_rgba(220,38,38,0.8)]"
-          }`}
-          style={{ left: `${pct}%` }}
-        />
-      </div>
-    </div>
-  );
-}

@@ -14,9 +14,9 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     }
 
     const fileData = fs.readFileSync(dataFilePath, "utf-8");
-    let lotes = JSON.parse(fileData);
+    const lotes: { id: string; fechaCreacion?: string }[] = JSON.parse(fileData);
 
-    const index = lotes.findIndex((l: any) => l.id === id);
+    const index = lotes.findIndex((l) => l.id === id);
     if (index === -1) {
       return NextResponse.json({ error: "Lote no encontrado" }, { status: 404 });
     }
