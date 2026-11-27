@@ -515,7 +515,14 @@ export function conRol(nombre: string, rol?: string): string {
 }
 
 /** Bitácora agrupada por guardado (misma fecha, firma y motivo). Solo lectura. */
-export function BitacoraCambios({ entradas }: { entradas: CambioBitacora[] }) {
+export function BitacoraCambios({
+  entradas,
+  legible = (s) => s,
+}: {
+  entradas: CambioBitacora[];
+  /** Traduce valores guardados con claves internas. */
+  legible?: (s: string) => string;
+}) {
   const grupos: { clave: string; fecha: string; por: string; rol: string; motivo: string; cambios: CambioBitacora[] }[] = [];
   for (const e of entradas) {
     const clave = `${e.fecha}|${e.por}|${e.rol}|${e.motivo}`;
@@ -545,8 +552,8 @@ export function BitacoraCambios({ entradas }: { entradas: CambioBitacora[] }) {
                 {g.cambios.map((c, i) => (
                   <tr key={i}>
                     <td className="px-3 py-1.5 font-bold text-marine">{c.campo}</td>
-                    <td className="px-3 py-1.5 text-slate-500 line-through decoration-slate-300">{c.anterior}</td>
-                    <td className="px-3 py-1.5 font-medium text-slate-800">{c.nuevo}</td>
+                    <td className="px-3 py-1.5 text-slate-500 line-through decoration-slate-300">{legible(c.anterior)}</td>
+                    <td className="px-3 py-1.5 font-medium text-slate-800">{legible(c.nuevo)}</td>
                   </tr>
                 ))}
               </tbody>

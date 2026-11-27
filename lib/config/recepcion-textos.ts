@@ -285,7 +285,7 @@ export const CHECK_PH: ItemChecklist[] = [
   {
     id: "p7a.3",
     texto:
-      "Espere la señal de estabilidad y lea el pH. Regístrelo como pH1. Si el medidor muestra la temperatura, léala con el sensor aún en el jugo y anótela en °C. Enjuague el electrodo, retire el exceso de agua sin frotar y repita la medición de pH en el vaso 2 para obtener pH2.",
+      "Espere la señal de estabilidad y lea el pH. Regístrelo como pH1. Enjuague el electrodo, retire el exceso de agua sin frotar y repita la medición de pH en el vaso 2 para obtener pH2.",
   },
   {
     id: "p7a.4",

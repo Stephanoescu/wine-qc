@@ -9,6 +9,7 @@ import type { Rol } from "@/lib/config/roles";
 import type { CambioSinFirma } from "@/lib/recepcion/lote";
 import { evaluarControl } from "./control";
 import { estadoDeCierre, estadoPasoT6 } from "./cierre";
+import { ETIQUETA_ACCION, ETIQUETA_DECISION, ETIQUETA_ESTADO, ETIQUETA_MOMENTO, ETIQUETA_ORIGEN, ETIQUETA_RESULTADO } from "./etiquetas";
 import { sellarFirmas } from "./firmas";
 import { evaluarRecipiente, NOMBRE_FRACCION } from "./registro";
 import type { FirmaRol, RegistroTrituracion } from "./tipos";
@@ -67,14 +68,14 @@ export function camposRegistro(r: RegistroTrituracion): Map<string, string> {
         const datos = c.noEvaluable
           ? "No evaluable"
           : `${c.abiertas}/${c.bayasRevisadas} abiertas, ${c.enteras} enteras, ${c.semillasDaniadas}/${c.semillasRevisadas} semillas dañadas`;
-        put(`${P} · control ${k + 1}`, `${c.momento} ${c.hora} · ${datos} · ${res}`);
+        put(`${P} · control ${k + 1}`, `${ETIQUETA_MOMENTO[c.momento]} ${c.hora} · ${datos} · ${ETIQUETA_RESULTADO[res]}`);
       });
       p.retenciones.forEach((rt, k) => {
-        const partes = [`${rt.kg} kg`, rt.recipientes, rt.accion ?? rt.origen];
+        const partes = [`${rt.kg} kg`, rt.recipientes, rt.accion ? ETIQUETA_ACCION[rt.accion] : ETIQUETA_ORIGEN[rt.origen]];
         if (rt.correccion) partes.push(`corrección: ${rt.correccion}`);
         if (rt.ajusteGap) partes.push(`ajuste a ${rt.ajusteGap.nuevoMm} mm por ${rt.ajusteGap.mantenimiento.nombre}`);
         partes.push(`Producción: ${firmaTxt(rt.conformidadProduccion)}`);
-        partes.push(`Calidad: ${rt.disposicion.decision ?? "—"} · ${rt.disposicion.texto} · ${firmaTxt(rt.disposicion.firma)}`);
+        partes.push(`Calidad: ${rt.disposicion.decision ? ETIQUETA_DECISION[rt.disposicion.decision] : "—"} · ${rt.disposicion.texto} · ${firmaTxt(rt.disposicion.firma)}`);
         put(`${P} · retención ${k + 1}`, partes.join(" · "));
       });
     }
@@ -85,7 +86,7 @@ export function camposRegistro(r: RegistroTrituracion): Map<string, string> {
   put("Limpieza · responsable", firmaTxt(r.entrega.limpieza.responsable));
   put("Limpieza · hora", r.entrega.limpieza.hora);
   put("Cierre · Producción", firmaTxt(r.entrega.cierre));
-  put("Estado", r.estado);
+  put("Estado", ETIQUETA_ESTADO[r.estado]);
   return m;
 }
 
@@ -185,7 +186,7 @@ export function aplicarEdicionRegistro(
   const falta = faltantesEdicionRegistro(antes, editado, firma);
   if (falta.length) throw new Error(falta[0]);
   const { registro, cambios } = previsualizarEdicionRegistro(antes, editado);
-  return sellarFirmas(
+  return redatarDisposiciones(antes, sellarFirmas(
     {
       ...registro,
       updatedAt: ahora,
@@ -195,7 +196,34 @@ export function aplicarEdicionRegistro(
       ],
     },
     ahora,
-  );
+  ), ahora);
+}
+
+/**
+ * Si la edición cambia la decisión de Calidad sobre un retenido, la firma
+ * de esa disposición toma la fecha y hora del cambio.
+ */
+export function redatarDisposiciones(antes: RegistroTrituracion, r: RegistroTrituracion, ahora: string): RegistroTrituracion {
+  return {
+    ...r,
+    tandas: r.tandas.map((t) => {
+      const ta = antes.tandas.find((x) => x.numero === t.numero);
+      const proceso = { ...t.proceso };
+      for (const g of SECUENCIA_TRITURACION) {
+        const p = proceso[g];
+        if (!p) continue;
+        proceso[g] = {
+          ...p,
+          retenciones: p.retenciones.map((rt) => {
+            const previa = ta?.proceso[g]?.retenciones.find((x) => x.id === rt.id);
+            if (!previa || previa.disposicion.decision === rt.disposicion.decision || !rt.disposicion.firma.nombre.trim()) return rt;
+            return { ...rt, disposicion: { ...rt.disposicion, firma: { ...rt.disposicion.firma, fecha: ahora } } };
+          }),
+        };
+      }
+      return { ...t, proceso };
+    }),
+  };
 }
 
 /** Fotos del registro (controles de salida). */

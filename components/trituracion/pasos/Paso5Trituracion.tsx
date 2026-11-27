@@ -21,6 +21,7 @@ import {
 import { horaLocalAhora, nuevoId } from "@/lib/recepcion/borrador";
 import { formatear } from "@/lib/recepcion/validacion";
 import { controlVacio } from "@/lib/trituracion/control";
+import { ETIQUETA_MOMENTO } from "@/lib/trituracion/etiquetas";
 import { gapDeGrupo } from "@/lib/trituracion/config-gaps";
 import {
   evaluarProceso,
@@ -41,12 +42,7 @@ import type { Cambiar } from "../AsistenteTrituracion";
 const kg = (n: number | null) => (n === null ? "—" : `${formatear(n, DECIMALES.kg)} kg`);
 const mm = (n: number) => `${formatear(n, 2, 0)} mm`;
 
-const MOMENTO: Record<ControlApertura["momento"], string> = {
-  inicio: "Inicio",
-  tras_parada: "Tras parada o ajuste",
-  final: "Final",
-  comprobacion: "Comprobación",
-};
+const MOMENTO = ETIQUETA_MOMENTO;
 
 const CHIP: Record<EstadoGrupoProceso, { cls: string; t: string }> = {
   completo: { cls: "bg-emerald-50 border-emerald-200 text-emerald-800", t: "Completo" },

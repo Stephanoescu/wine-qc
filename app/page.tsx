@@ -50,7 +50,7 @@ export default function LandingPage() {
         {/* Company name */}
         <div className="flex flex-col gap-3">
           <h1 className="text-5xl sm:text-7xl font-black text-white leading-none tracking-tight">
-            Viña D´
+            Viña D&apos;
             <span className="block text-transparent bg-clip-text bg-gradient-to-r from-gold-light via-gold to-gold-dark drop-shadow-lg">
               Los Campos
             </span>
@@ -70,10 +70,10 @@ export default function LandingPage() {
         </Link>
 
         {/* Stats row */}
-        <div className="flex items-center gap-8 mt-4 bg-marine-dark/40 backdrop-blur-sm py-4 px-8 rounded-2xl border border-white/10">
+        <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 mt-4 bg-marine-dark/40 backdrop-blur-sm py-4 px-8 rounded-2xl border border-white/10">
           {[
             { value: "Poka-Yoke", label: "Validación automática" },
-            { value: "3 Cat.", label: "A · B · C" },
+            { value: "3 estados", label: "Liberado · Retenido · Rechazado" },
             { value: "100%", label: "Trazabilidad" },
           ].map((s) => (
             <div key={s.label} className="text-center">

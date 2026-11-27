@@ -2,6 +2,7 @@
 
 import React from "react";
 import { ROL_ENOLOGIA } from "@/lib/config/roles";
+import { ETIQUETA_ACCION } from "@/lib/trituracion/etiquetas";
 import { escribirFirma } from "@/lib/trituracion/firmas";
 import { faltantesRetencion } from "@/lib/trituracion/proceso";
 import type { FirmaRol, Retencion } from "@/lib/trituracion/tipos";
@@ -13,11 +14,7 @@ export function firmar(f: FirmaRol, nombre: string, rol = f.rol): FirmaRol {
   return escribirFirma(f, nombre, rol);
 }
 
-const ACCIONES: { v: NonNullable<Retencion["accion"]>; t: string }[] = [
-  { v: "revision", t: "Revisión" },
-  { v: "ajuste_gap", t: "Ajustar gap" },
-  { v: "detener", t: "Detener" },
-];
+const ACCIONES = (["revision", "ajuste_gap", "detener"] as const).map((v) => ({ v, t: ETIQUETA_ACCION[v] }));
 
 /**
  * Material retenido (actividad 9 o pérdida de identificación): kg y recipientes,
@@ -142,7 +139,10 @@ export function RetencionForm({
               type="button"
               role="radio"
               aria-checked={rt.disposicion.decision === v}
-              onClick={() => set({ disposicion: { ...rt.disposicion, decision: v } })}
+              onClick={() =>
+                rt.disposicion.decision !== v &&
+                set({ disposicion: { ...rt.disposicion, decision: v, firma: { ...rt.disposicion.firma, fecha: "" } } })
+              }
               className={`px-3 py-2.5 rounded-xl border-2 text-sm font-bold ${rt.disposicion.decision === v ? cls : "border-slate-200 bg-white text-slate-500"}`}
             >
               {t}

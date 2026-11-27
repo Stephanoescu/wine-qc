@@ -9,6 +9,7 @@ import { DEFINICION_GRUPOS, REGLA_MERMA, TITULO_MODULO } from "@/lib/config/trit
 import { formatear } from "@/lib/recepcion/validacion";
 import { calcularBalance, type Balance } from "@/lib/trituracion/balance";
 import { evaluarControl } from "@/lib/trituracion/control";
+import { ETIQUETA_ACCION, ETIQUETA_DECISION, ETIQUETA_MOMENTO, bitacoraLegible } from "@/lib/trituracion/etiquetas";
 import { evaluarProceso } from "@/lib/trituracion/proceso";
 import { NOMBRE_FRACCION } from "@/lib/trituracion/registro";
 import type { FirmaRol, RegistroTrituracion, TipoFraccion, VersionTablaGaps } from "@/lib/trituracion/tipos";
@@ -24,7 +25,6 @@ const pct = (n: number | null) => (n === null ? "—" : `${formatear(n, 1)} %`);
 
 /** Colores de G, M y P (paleta categórica validada; siempre con etiqueta visible y tabla). */
 const COLOR_GRUPO: Record<Grupo, string> = { G: "#257de0", M: "#f47230", P: "#00b894" };
-const MOMENTO: Record<string, string> = { inicio: "Inicio", tras_parada: "Tras parada o ajuste", final: "Final", comprobacion: "Comprobación" };
 
 function Seccion({ titulo, icon: Icon, children }: { titulo: string; icon: React.ElementType; children: React.ReactNode }) {
   return (
@@ -138,7 +138,7 @@ export function InformeTrituracion({
       ...p.retenciones.flatMap((rt) => [
         ...(rt.ajusteGap ? [{ rol: "Ajusta el gap", f: rt.ajusteGap.mantenimiento, detalle: `Tanda ${t.numero} · grupo ${g}` }] : []),
         { rol: "Conformidad", f: rt.conformidadProduccion, detalle: `Tanda ${t.numero} · grupo ${g} · retención` },
-        { rol: "Disposición", f: rt.disposicion.firma, detalle: `Tanda ${t.numero} · grupo ${g} · ${rt.disposicion.decision === "autorizar_entrega" ? "autoriza entrega" : "no entregar"}` },
+        { rol: "Disposición", f: rt.disposicion.firma, detalle: `Tanda ${t.numero} · grupo ${g} · ${rt.disposicion.decision ? ETIQUETA_DECISION[rt.disposicion.decision] : "—"}` },
       ]),
     ]),
     { rol: "Disposición de porciones y pruebas", f: r.entrega.disposicionPorciones.firma, detalle: r.entrega.disposicionPorciones.texto },
@@ -248,7 +248,7 @@ export function InformeTrituracion({
               </tbody>
             </table>
             <p className="mt-2 text-xs font-medium text-slate-500">
-              Solo informativa: entrada − (clasificado + fracciones separadas). No se completa como merma supuesta. {REGLA_MERMA}
+              Solo informativa: entrada − (clasificado + fracciones separadas). {REGLA_MERMA}
             </p>
           </div>
           <div className="flex flex-col gap-6">
@@ -314,7 +314,7 @@ export function InformeTrituracion({
               <li key={c.id} className="flex flex-wrap items-center gap-x-3 gap-y-1">
                 <span className="font-mono text-xs text-slate-500 w-12">{c.hora}</span>
                 <span className="font-bold text-marine">
-                  T{t.numero} · {g} · {MOMENTO[c.momento]}
+                  T{t.numero} · {g} · {ETIQUETA_MOMENTO[c.momento]}
                 </span>
                 <BadgeResultadoControl resultado={evaluarControl(c).resultado} />
                 {!c.noEvaluable && (
@@ -370,8 +370,8 @@ export function InformeTrituracion({
                   T{t.numero} · {g} · {rt.kg} kg retenidos · {rt.recipientes}
                 </p>
                 <p className="text-xs font-medium text-slate-600">
-                  {rt.origen === "control" ? `Acción: ${rt.accion ?? "—"} · corrección: ${rt.correccion}` : "Pérdida de identificación"} · Calidad:{" "}
-                  {rt.disposicion.decision === "autorizar_entrega" ? "autoriza la entrega" : "no entregar"} · {rt.disposicion.texto}
+                  {rt.origen === "control" ? `Acción: ${rt.accion ? ETIQUETA_ACCION[rt.accion] : "—"} · corrección: ${rt.correccion}` : "Pérdida de identificación"} · Calidad:{" "}
+                  {rt.disposicion.decision ? ETIQUETA_DECISION[rt.disposicion.decision] : "—"} · {rt.disposicion.texto}
                 </p>
               </div>
             )),
@@ -430,7 +430,7 @@ export function InformeTrituracion({
 
       {r.bitacora.length > 0 && (
         <Seccion titulo={`Bitácora de cambios (${r.bitacora.length})`} icon={History}>
-          <BitacoraCambios entradas={r.bitacora} />
+          <BitacoraCambios entradas={r.bitacora} legible={bitacoraLegible} />
         </Seccion>
       )}
 
