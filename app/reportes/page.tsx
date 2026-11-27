@@ -24,8 +24,9 @@ import {
   aplicarImportacion,
   analizarRespaldo,
   descargarRespaldo,
-  planificarImportacion,
-  type PlanImportacion,
+  datosActuales,
+  planificarImportacionCompleta,
+  type PlanCompleto,
   type Respaldo,
 } from "@/lib/recepcion/respaldo";
 import type { EstadoLote, LoteAlmacenado } from "@/lib/recepcion/tipos";
@@ -33,6 +34,8 @@ import { formatear } from "@/lib/recepcion/validacion";
 import { useEsCliente } from "@/lib/use-es-cliente";
 import { Aviso } from "@/components/recepcion/WizardUI";
 import { EstadoBadge, ESTILO_ESTADO } from "@/components/lote/EstadoBadge";
+import { EstadoRegistroBadge } from "@/components/trituracion/EstadoRegistroBadge";
+import type { EstadoRegistro } from "@/lib/trituracion/tipos";
 import { DialogoEliminarLote } from "@/components/lote/EliminarLote";
 import { fechaCorta, fechaHora } from "@/components/lote/InformeLote";
 
@@ -386,12 +389,31 @@ function TablaLotes({
 // ─────────────────────────────────────────
 // Respaldo (exportar / importar)
 // ─────────────────────────────────────────
-function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; onImportado: () => void }) {
+function filasPlan(p: PlanCompleto) {
+  return [
+    { nombre: "Lotes", ...p.lotes },
+    { nombre: "Trituraciones", ...p.trituraciones },
+    { nombre: "Versiones de la tabla de gaps", ...p.versiones },
+    { nombre: "Comprobaciones (Registro D)", ...p.comprobaciones },
+  ].map((f) => ({ nombre: f.nombre, nuevos: f.nuevos.length, actualizados: f.actualizados.length, sinCambios: f.sinCambios }));
+}
+
+function cantidadCambios(p: PlanCompleto): number {
+  return filasPlan(p).reduce((s, f) => s + f.nuevos + f.actualizados, 0);
+}
+
+function resumenPlan(p: PlanCompleto): string {
+  return filasPlan(p)
+    .filter((f) => f.nuevos + f.actualizados > 0)
+    .map((f) => `${f.nombre.toLowerCase()} ${f.nuevos} nuevo(s) y ${f.actualizados} actualizado(s)`)
+    .join("; ") || "sin cambios";
+}
+function PanelRespaldo({ onImportado }: { onImportado: () => void }) {
   const archivo = useRef<HTMLInputElement>(null);
   const [ocupado, setOcupado] = useState<"exportar" | "importar" | null>(null);
   const [mensaje, setMensaje] = useState<{ tono: "ok" | "error" | "alerta"; texto: string } | null>(null);
   const [pendiente, setPendiente] = useState<{
-    plan: PlanImportacion;
+    plan: PlanCompleto;
     respaldo: Respaldo;
     nombre: string;
     /** Lotes nuevos que figuran como eliminados en este dispositivo. */
@@ -405,7 +427,7 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
       const r = await descargarRespaldo();
       setMensaje({
         tono: r.fotosFaltantes ? "alerta" : "ok",
-        texto: `Respaldo descargado: ${r.lotes} lote(s) y ${r.fotos} foto(s).${
+        texto: `Respaldo descargado: ${r.lotes} lote(s), ${r.trituraciones} registro(s) de trituración y ${r.fotos} foto(s), con la configuración de gaps.${
           r.fotosFaltantes ? ` ${r.fotosFaltantes} foto(s) no se encontraron en este dispositivo.` : ""
         }`,
       });
@@ -424,9 +446,11 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
     setPendiente(null);
     try {
       const respaldo = analizarRespaldo(await f.text());
-      const plan = planificarImportacion(actuales, respaldo.lotes);
+      const plan = planificarImportacionCompleta(respaldo, datosActuales());
       const idsEliminados = new Set(getEliminaciones().map((x) => x.id));
-      const eliminadosAqui = plan.nuevos.filter((l) => idsEliminados.has(l.id)).length;
+      const eliminadosAqui =
+        plan.lotes.nuevos.filter((l) => idsEliminados.has(l.id)).length +
+        plan.trituraciones.nuevos.filter((r) => idsEliminados.has(r.id)).length;
       setPendiente({ plan, respaldo, nombre: f.name, eliminadosAqui });
     } catch (err) {
       setMensaje({ tono: "error", texto: err instanceof Error ? err.message : "No se pudo leer el archivo." });
@@ -441,7 +465,7 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
       if (r.ok) {
         setMensaje({
           tono: "ok",
-          texto: `Importación completa: ${pendiente.plan.nuevos.length} nuevo(s), ${pendiente.plan.actualizados.length} actualizado(s), ${r.fotosRestauradas ?? 0} foto(s) restaurada(s).`,
+          texto: `Importación completa: ${resumenPlan(pendiente.plan)}; ${r.fotosRestauradas ?? 0} foto(s) restaurada(s).`,
         });
         onImportado();
       } else {
@@ -453,7 +477,7 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
     }
   }
 
-  const sinCambiosReales = pendiente && pendiente.plan.nuevos.length + pendiente.plan.actualizados.length === 0;
+  const sinCambiosReales = pendiente && cantidadCambios(pendiente.plan) === 0;
 
   return (
     <div className="flex flex-col gap-3">
@@ -482,14 +506,24 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
       {pendiente && (
         <Aviso tono="info" titulo={`Importar «${pendiente.nombre}»`}>
           <div className="flex flex-col gap-2">
-            <span>
-              {pendiente.respaldo.lotes.length} lote(s) en el archivo: <strong>{pendiente.plan.nuevos.length} nuevo(s)</strong>,{" "}
-              <strong>{pendiente.plan.actualizados.length} actualizado(s)</strong> (versión más reciente) y{" "}
-              {pendiente.plan.sinCambios} sin cambios. Los lotes que solo están en este dispositivo se conservan.
-            </span>
+            <ul className="flex flex-col gap-0.5">
+              {filasPlan(pendiente.plan).map((f) => (
+                <li key={f.nombre}>
+                  <strong>{f.nombre}:</strong> {f.nuevos} nuevo(s), {f.actualizados} actualizado(s) (versión más reciente), {f.sinCambios} sin
+                  cambios
+                </li>
+              ))}
+            </ul>
+            <span>Lo que solo está en este dispositivo se conserva.</span>
+            {pendiente.plan.trituraciones.descartadosPorLote > 0 && (
+              <span className="font-bold text-amber-800">
+                {pendiente.plan.trituraciones.descartadosPorLote} registro(s) de trituración no se importan: su lote ya tiene un registro más reciente
+                (un registro por lote).
+              </span>
+            )}
             {pendiente.eliminadosAqui > 0 && (
               <span className="font-bold text-amber-800">
-                {pendiente.eliminadosAqui} de los lotes nuevos se habían eliminado en este dispositivo: al importar volverán a
+                {pendiente.eliminadosAqui} de los datos nuevos se habían eliminado en este dispositivo: al importar volverán a
                 aparecer.
               </span>
             )}
@@ -602,7 +636,7 @@ function Contenido() {
             <RefreshCw className="w-4 h-4" />
             Actualizar
           </button>
-          <PanelRespaldo actuales={lotes} onImportado={recargar} />
+          <PanelRespaldo onImportado={recargar} />
         </div>
       </div>
 
@@ -688,15 +722,22 @@ function Contenido() {
       {eliminaciones.length > 0 && (
         <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
           <summary className="cursor-pointer px-4 sm:px-6 py-4 text-sm font-bold text-marine">
-            Lotes eliminados ({eliminaciones.length})
+            Eliminaciones ({eliminaciones.length})
           </summary>
           <ul className="divide-y divide-slate-100 border-t border-slate-100">
             {eliminaciones.map((e) => (
               <li key={`${e.id}|${e.fecha}`} className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-baseline gap-x-4 gap-y-1 text-sm">
                 <span className="font-mono text-xs text-slate-500 sm:w-32 flex-shrink-0">{fechaHora(e.fecha)}</span>
                 <span className="font-mono font-bold text-marine sm:w-36 flex-shrink-0 break-all">{e.codigoLote}</span>
-                <span className="flex-shrink-0">
-                  <EstadoBadge estado={e.estado} />
+                <span className="flex-shrink-0 flex items-center gap-1.5">
+                  {e.modulo === "trituracion" ? (
+                    <>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Trituración</span>
+                      <EstadoRegistroBadge estado={e.estado as EstadoRegistro} />
+                    </>
+                  ) : (
+                    <EstadoBadge estado={e.estado as EstadoLote} />
+                  )}
                 </span>
                 <span className="font-medium text-slate-600">{e.motivo}</span>
               </li>

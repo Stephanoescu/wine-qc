@@ -4,6 +4,8 @@
 // Los componentes acceden solo a través de estas funciones.
 // ============================================================
 import { escribirLista, leerLista, tieneId, type Resultado } from "@/lib/almacen/local";
+import { registrarEliminaciones } from "@/lib/recepcion/almacen";
+import { borrarFotos } from "@/lib/recepcion/fotos";
 import type { EstadoRegistro, RegistroTrituracion } from "./tipos";
 
 export type { Resultado } from "@/lib/almacen/local";
@@ -47,6 +49,22 @@ export function saveRegistro(r: RegistroTrituracion): Resultado {
   const otroDelLote = todos.find((x) => x.loteId === r.loteId && x.id !== r.id);
   if (otroDelLote) return { ok: false, error: `El lote ${r.codigoLote} ya tiene un registro de trituración.` };
   return escribirLista(CLAVE_TRITURACIONES, [r, ...todos.filter((x) => x.id !== r.id)]);
+}
+
+/** Elimina el registro y sus fotos, y deja el motivo en la bitácora de eliminaciones. */
+export function deleteRegistro(id: string, motivo: string, ahora: string): Resultado {
+  const todos = getRegistros();
+  const r = todos.find((x) => x.id === id);
+  if (!r) return { ok: false, error: "El registro ya no existe en este dispositivo." };
+  const res = escribirLista(
+    CLAVE_TRITURACIONES,
+    todos.filter((x) => x.id !== id),
+  );
+  if (!res.ok) return res;
+  registrarEliminaciones([{ id: r.id, codigoLote: r.codigoLote, estado: r.estado, modulo: "trituracion", motivo: motivo.trim(), fecha: ahora }]);
+  const fotos = r.salida.controles.flatMap((c) => c.fotoIds);
+  if (fotos.length) borrarFotos(fotos).catch(() => {});
+  return res;
 }
 
 /** Sustituye todos los registros (importación de respaldo). */

@@ -7,6 +7,7 @@ import { DECIMALES } from "@/lib/config/recepcion";
 import { CHECK_ACT1, CHECK_CONDICION_GENERAL, NOTA_PESO_ENTRADA } from "@/lib/config/trituracion-textos";
 import type { LoteV2 } from "@/lib/recepcion/tipos";
 import { formatear } from "@/lib/recepcion/validacion";
+import { escribirFirma } from "@/lib/trituracion/firmas";
 import type { RegistroTrituracion } from "@/lib/trituracion/tipos";
 import { Aviso, Checklist, FormField, SectionCard, StyledInput } from "@/components/recepcion/WizardUI";
 import { CampoFirma } from "@/components/lote/CampoFirma";
@@ -90,15 +91,15 @@ export function Paso1Recibir({
             etiqueta="Responsable que recibe"
             nombre={a.recibe.nombre}
             rol={a.recibe.rol}
-            onNombre={(nombre) => setA({ recibe: { ...a.recibe, nombre } })}
-            onRol={(rol) => setA({ recibe: { ...a.recibe, rol } })}
+            onNombre={(nombre) => setA({ recibe: escribirFirma(a.recibe, nombre) })}
+            onRol={(rol) => setA({ recibe: escribirFirma(a.recibe, a.recibe.nombre, rol) })}
           />
           <CampoFirma
             etiqueta="Entregado por"
             nombre={a.entregadoPor.nombre}
             rol="Recepción"
             rolFijo="Recepción"
-            onNombre={(nombre) => setA({ entregadoPor: { ...a.entregadoPor, nombre, rol: "Recepción" } })}
+            onNombre={(nombre) => setA({ entregadoPor: escribirFirma(a.entregadoPor, nombre, "Recepción") })}
           />
         </div>
       </SectionCard>

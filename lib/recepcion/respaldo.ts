@@ -1,6 +1,9 @@
 // ============================================================
-// Respaldo JSON de los lotes (con fotos en base64) para /reportes.
-// Sirve también para pasar los lotes de un dispositivo a otro.
+// Respaldo JSON (con fotos en base64) para /reportes.
+// Versión 2: lotes de Recepción, registros de Trituración, versiones de
+// la tabla de gaps, comprobaciones del Anexo B y bitácora de eliminaciones.
+// Se importan también los respaldos de la versión 1 (solo lotes).
+// Sirve también para pasar los datos de un dispositivo a otro.
 // ============================================================
 import {
   fotosDelLote,
@@ -13,9 +16,14 @@ import {
 import { fechaLocalHoy } from "./borrador";
 import { guardarFoto, obtenerFoto } from "./fotos";
 import { esLegacy, type EntradaEliminacion, type LoteAlmacenado } from "./tipos";
+import { tieneId } from "@/lib/almacen/local";
+import { getRegistros, reemplazarRegistros } from "@/lib/trituracion/almacen";
+import { getComprobaciones, getVersiones, reemplazarComprobaciones, reemplazarVersiones } from "@/lib/trituracion/config-gaps";
+import { fotosDelRegistro } from "@/lib/trituracion/edicion";
+import type { ComprobacionInicial, RegistroTrituracion, VersionTablaGaps } from "@/lib/trituracion/tipos";
 
 export const FORMATO_RESPALDO = "wine-qc-respaldo";
-export const VERSION_RESPALDO = 1;
+export const VERSION_RESPALDO = 2;
 
 export interface Respaldo {
   formato: typeof FORMATO_RESPALDO;
@@ -24,8 +32,18 @@ export interface Respaldo {
   lotes: LoteAlmacenado[];
   /** id de foto → data URL (base64). */
   fotos: Record<string, string>;
-  /** Bitácora de lotes eliminados (solo en el respaldo completo; opcional). */
+  /** Bitácora de eliminaciones (solo en el respaldo completo; opcional). */
   eliminaciones?: EntradaEliminacion[];
+  /** Desde la versión 2 (opcionales). */
+  trituraciones?: RegistroTrituracion[];
+  gapsVersiones?: VersionTablaGaps[];
+  comprobaciones?: ComprobacionInicial[];
+}
+
+/** Respaldo parcial: solo los lotes y/o registros indicados (sin configuración ni bitácora). */
+export interface AlcanceRespaldo {
+  lotes?: LoteAlmacenado[];
+  trituraciones?: RegistroTrituracion[];
 }
 
 // ─────────────────────────────────────────
@@ -40,24 +58,27 @@ function blobADataUrl(blob: Blob): Promise<string> {
   });
 }
 
-/** Respaldo de todos los lotes (con la bitácora de eliminaciones) o solo de los indicados. */
+/** Respaldo completo (todo el dispositivo) o parcial (solo los lotes / registros indicados). */
 export async function crearRespaldo(
   ahora = new Date(),
-  soloLotes?: LoteAlmacenado[],
+  alcance?: AlcanceRespaldo,
 ): Promise<{ respaldo: Respaldo; fotosFaltantes: number }> {
-  const lotes = soloLotes ?? getLotes();
+  const completo = !alcance;
+  const lotes = alcance ? (alcance.lotes ?? []) : getLotes();
+  const trituraciones = alcance ? (alcance.trituraciones ?? []) : getRegistros();
+  const ids = [
+    ...lotes.flatMap((l) => (esLegacy(l) ? [] : fotosDelLote(l))),
+    ...trituraciones.flatMap((r) => fotosDelRegistro(r)),
+  ];
   const fotos: Record<string, string> = {};
   let fotosFaltantes = 0;
-  for (const l of lotes) {
-    if (esLegacy(l)) continue;
-    for (const id of fotosDelLote(l)) {
-      try {
-        const blob = await obtenerFoto(id);
-        if (blob) fotos[id] = await blobADataUrl(blob);
-        else fotosFaltantes++;
-      } catch {
-        fotosFaltantes++;
-      }
+  for (const id of ids) {
+    try {
+      const blob = await obtenerFoto(id);
+      if (blob) fotos[id] = await blobADataUrl(blob);
+      else fotosFaltantes++;
+    } catch {
+      fotosFaltantes++;
     }
   }
   return {
@@ -67,7 +88,10 @@ export async function crearRespaldo(
       exportadoEn: ahora.toISOString(),
       lotes,
       fotos,
-      ...(soloLotes ? {} : { eliminaciones: getEliminaciones() }),
+      trituraciones,
+      ...(completo
+        ? { eliminaciones: getEliminaciones(), gapsVersiones: getVersiones(), comprobaciones: getComprobaciones() }
+        : {}),
     },
     fotosFaltantes,
   };
@@ -79,22 +103,33 @@ export function nombreArchivoRespaldo(ahora = new Date(), codigoLote?: string): 
   return `wine-qc-respaldo-${codigo}${fechaLocalHoy(ahora)}.json`;
 }
 
-/** Genera el respaldo (de todo, o de un solo lote) y lo descarga como archivo. */
+/** Genera el respaldo (completo o parcial) y lo descarga como archivo. */
 export async function descargarRespaldo(
-  soloLote?: LoteAlmacenado,
-): Promise<{ lotes: number; fotos: number; fotosFaltantes: number }> {
+  alcance?: AlcanceRespaldo,
+): Promise<{ lotes: number; trituraciones: number; fotos: number; fotosFaltantes: number }> {
   const ahora = new Date();
-  const { respaldo, fotosFaltantes } = await crearRespaldo(ahora, soloLote ? [soloLote] : undefined);
+  const { respaldo, fotosFaltantes } = await crearRespaldo(ahora, alcance);
+  const codigo =
+    alcance?.lotes?.length === 1 && !alcance.trituraciones?.length
+      ? alcance.lotes[0].codigoLote
+      : alcance?.trituraciones?.length === 1 && !alcance.lotes?.length
+        ? `${alcance.trituraciones[0].codigoLote}-trituracion`
+        : undefined;
   const blob = new Blob([JSON.stringify(respaldo)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = nombreArchivoRespaldo(ahora, soloLote?.codigoLote);
+  a.download = nombreArchivoRespaldo(ahora, codigo);
   document.body.appendChild(a);
   a.click();
   a.remove();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
-  return { lotes: respaldo.lotes.length, fotos: Object.keys(respaldo.fotos).length, fotosFaltantes };
+  return {
+    lotes: respaldo.lotes.length,
+    trituraciones: respaldo.trituraciones?.length ?? 0,
+    fotos: Object.keys(respaldo.fotos).length,
+    fotosFaltantes,
+  };
 }
 
 // ─────────────────────────────────────────
@@ -133,7 +168,21 @@ export function analizarRespaldo(texto: string): Respaldo {
           !!e && typeof e.id === "string" && typeof e.codigoLote === "string" && typeof e.fecha === "string",
       )
     : [];
-  return { formato: FORMATO_RESPALDO, version: d.version, exportadoEn: String(d.exportadoEn ?? ""), lotes, fotos, eliminaciones };
+  const lista = <T,>(x: unknown, valido: (y: unknown) => y is T): T[] => (Array.isArray(x) ? x.filter(valido) : []);
+  const trituraciones = lista(d.trituraciones, (y): y is RegistroTrituracion => tieneId(y) && typeof (y as { loteId?: unknown }).loteId === "string");
+  const gapsVersiones = lista(d.gapsVersiones, (y): y is VersionTablaGaps => tieneId(y) && typeof (y as { version?: unknown }).version === "number");
+  const comprobaciones = lista(d.comprobaciones, (y): y is ComprobacionInicial => tieneId(y) && typeof (y as { grupo?: unknown }).grupo === "string");
+  return {
+    formato: FORMATO_RESPALDO,
+    version: d.version,
+    exportadoEn: String(d.exportadoEn ?? ""),
+    lotes,
+    fotos,
+    eliminaciones,
+    trituraciones,
+    gapsVersiones,
+    comprobaciones,
+  };
 }
 
 function marcaTiempo(l: LoteAlmacenado): string {
@@ -182,26 +231,109 @@ function dataUrlABlob(url: string): Blob {
   return new Blob([bytes], { type: tipo });
 }
 
-/** Escribe los lotes fusionados y restaura las fotos de los lotes nuevos o actualizados. */
+export interface PlanGenerico<T> {
+  nuevos: T[];
+  actualizados: T[];
+  sinCambios: number;
+  resultado: T[];
+}
+
+/** Fusión por id que conserva la versión con la marca de tiempo más reciente. */
+function fusionar<T extends { id: string }>(actuales: T[], entrantes: T[], marca: (x: T) => string): PlanGenerico<T> {
+  const porId = new Map(actuales.map((x) => [x.id, x]));
+  const nuevos: T[] = [];
+  const actualizados: T[] = [];
+  let sinCambios = 0;
+  for (const e of entrantes) {
+    const a = porId.get(e.id);
+    if (!a) {
+      nuevos.push(e);
+      porId.set(e.id, e);
+    } else if (marca(e) > marca(a)) {
+      actualizados.push(e);
+      porId.set(e.id, e);
+    } else sinCambios++;
+  }
+  const idsNuevos = new Set(nuevos.map((x) => x.id));
+  return { nuevos, actualizados, sinCambios, resultado: [...nuevos, ...[...porId.values()].filter((x) => !idsNuevos.has(x.id))] };
+}
+
+export interface PlanCompleto {
+  lotes: PlanImportacion;
+  trituraciones: PlanGenerico<RegistroTrituracion> & {
+    /** Registros descartados porque el mismo lote ya tenía otro más reciente (un registro por lote). */
+    descartadosPorLote: number;
+  };
+  versiones: PlanGenerico<VersionTablaGaps>;
+  comprobaciones: PlanGenerico<ComprobacionInicial>;
+}
+
+export interface DatosActuales {
+  lotes: LoteAlmacenado[];
+  trituraciones: RegistroTrituracion[];
+  versiones: VersionTablaGaps[];
+  comprobaciones: ComprobacionInicial[];
+}
+
+export function datosActuales(): DatosActuales {
+  return { lotes: getLotes(), trituraciones: getRegistros(), versiones: getVersiones(), comprobaciones: getComprobaciones() };
+}
+
+/** Plan de importación de todo el respaldo (fusión sin duplicados, gana lo más reciente). */
+export function planificarImportacionCompleta(respaldo: Respaldo, actuales: DatosActuales): PlanCompleto {
+  const lotes = planificarImportacion(actuales.lotes, respaldo.lotes);
+  const t = fusionar(actuales.trituraciones, respaldo.trituraciones ?? [], (r) => r.updatedAt ?? "");
+  // Un registro por lote: si dos ids distintos apuntan al mismo lote, queda el más reciente.
+  const porLote = new Map<string, RegistroTrituracion>();
+  for (const r of t.resultado) {
+    const otro = porLote.get(r.loteId);
+    if (!otro || (r.updatedAt ?? "") > (otro.updatedAt ?? "")) porLote.set(r.loteId, r);
+  }
+  const quedan = new Set([...porLote.values()].map((r) => r.id));
+  const trituraciones = {
+    nuevos: t.nuevos.filter((r) => quedan.has(r.id)),
+    actualizados: t.actualizados.filter((r) => quedan.has(r.id)),
+    sinCambios: t.sinCambios,
+    resultado: t.resultado.filter((r) => quedan.has(r.id)),
+    descartadosPorLote: t.resultado.length - quedan.size,
+  };
+  return {
+    lotes,
+    trituraciones,
+    // Las versiones aprobadas no cambian: solo se agregan las que faltan.
+    versiones: fusionar(actuales.versiones, respaldo.gapsVersiones ?? [], () => ""),
+    comprobaciones: fusionar(actuales.comprobaciones, respaldo.comprobaciones ?? [], (c) => c.updatedAt ?? ""),
+  };
+}
+
+/** Escribe todo lo fusionado y restaura las fotos de los lotes y registros nuevos o actualizados. */
 export async function aplicarImportacion(
-  plan: PlanImportacion,
+  plan: PlanCompleto,
   respaldo: Respaldo,
 ): Promise<Resultado & { fotosRestauradas?: number }> {
   let fotosRestauradas = 0;
-  for (const l of [...plan.nuevos, ...plan.actualizados]) {
-    if (esLegacy(l)) continue;
-    for (const id of fotosDelLote(l)) {
-      const url = respaldo.fotos[id];
-      if (!url) continue;
-      try {
-        await guardarFoto(dataUrlABlob(url), id);
-        fotosRestauradas++;
-      } catch {
-        // Foto dañada o sin espacio: el lote se importa igual y la foto se muestra como "no disponible".
-      }
+  const ids = [
+    ...[...plan.lotes.nuevos, ...plan.lotes.actualizados].flatMap((l) => (esLegacy(l) ? [] : fotosDelLote(l))),
+    ...[...plan.trituraciones.nuevos, ...plan.trituraciones.actualizados].flatMap((r) => fotosDelRegistro(r)),
+  ];
+  for (const id of ids) {
+    const url = respaldo.fotos[id];
+    if (!url) continue;
+    try {
+      await guardarFoto(dataUrlABlob(url), id);
+      fotosRestauradas++;
+    } catch {
+      // Foto dañada o sin espacio: el dato se importa igual y la foto se muestra como "no disponible".
     }
   }
-  const r = reemplazarLotes(plan.resultado);
-  if (r.ok && respaldo.eliminaciones?.length) registrarEliminaciones(respaldo.eliminaciones);
-  return r.ok ? { ok: true, fotosRestauradas } : r;
+  for (const r of [
+    reemplazarLotes(plan.lotes.resultado),
+    reemplazarRegistros(plan.trituraciones.resultado),
+    reemplazarVersiones(plan.versiones.resultado),
+    reemplazarComprobaciones(plan.comprobaciones.resultado),
+  ]) {
+    if (!r.ok) return r;
+  }
+  if (respaldo.eliminaciones?.length) registrarEliminaciones(respaldo.eliminaciones);
+  return { ok: true, fotosRestauradas };
 }

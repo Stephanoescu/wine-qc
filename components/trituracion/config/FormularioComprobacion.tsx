@@ -19,6 +19,7 @@ import { nuevoId } from "@/lib/recepcion/borrador";
 import { formatear, validarNumero } from "@/lib/recepcion/validacion";
 import { controlVacio, evaluarControl } from "@/lib/trituracion/control";
 import { saveComprobacion } from "@/lib/trituracion/config-gaps";
+import { escribirFirma, sellarFirmas } from "@/lib/trituracion/firmas";
 import type { ComprobacionInicial, ControlApertura, IntentoComprobacion } from "@/lib/trituracion/tipos";
 import { Aviso, Checklist, FormField, Interruptor, NumeroInput, SectionCard, SiNo, StyledInput, inputBaseClasses } from "@/components/recepcion/WizardUI";
 import { CampoFirma } from "@/components/lote/CampoFirma";
@@ -81,7 +82,9 @@ export function FormularioComprobacion({
       setError(`Complete: ${f.join(", ")}`);
       return;
     }
-    const r = saveComprobacion({ ...c, updatedAt: new Date().toISOString() });
+    const ahora = new Date().toISOString();
+    // Guardar confirma la firma de Mantenimiento (fecha y hora de la confirmación).
+    const r = saveComprobacion(sellarFirmas({ ...c, updatedAt: ahora }, ahora));
     if (r.ok) onGuardada();
     else setError(r.error);
   }
@@ -177,7 +180,7 @@ export function FormularioComprobacion({
                 nombre={c.gapInicial.mantenimiento.nombre}
                 rol="Mantenimiento"
                 rolFijo="Mantenimiento"
-                onNombre={(nombre) => setGap({ mantenimiento: { ...c.gapInicial.mantenimiento, nombre, rol: "Mantenimiento" } })}
+                onNombre={(nombre) => setGap({ mantenimiento: escribirFirma(c.gapInicial.mantenimiento, nombre, "Mantenimiento") })}
               />
             </fieldset>
           </SectionCard>

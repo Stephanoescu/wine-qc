@@ -2,14 +2,15 @@
 
 import React from "react";
 import { ROL_ENOLOGIA } from "@/lib/config/roles";
+import { escribirFirma } from "@/lib/trituracion/firmas";
 import { faltantesRetencion } from "@/lib/trituracion/proceso";
 import type { FirmaRol, Retencion } from "@/lib/trituracion/tipos";
 import { Aviso, FormField, NumeroInput, StyledInput, inputBaseClasses } from "@/components/recepcion/WizardUI";
 import { CampoFirma } from "@/components/lote/CampoFirma";
 
-/** Firma con la fecha y hora del momento en que se escribe el nombre. */
+/** Nombre escrito: la fecha se registra al confirmar (pasar de paso o pulsar la acción). */
 export function firmar(f: FirmaRol, nombre: string, rol = f.rol): FirmaRol {
-  return { nombre, rol, fecha: nombre.trim() ? new Date().toISOString() : "" };
+  return escribirFirma(f, nombre, rol);
 }
 
 const ACCIONES: { v: NonNullable<Retencion["accion"]>; t: string }[] = [

@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import { CheckSquare, Layers, Lock, Plus, Square, Trash2 } from "lucide-react";
 import { DECIMALES } from "@/lib/config/recepcion";
 import { GRUPOS, SECUENCIA_TRITURACION, type Grupo } from "@/lib/config/trituracion";
@@ -18,6 +18,7 @@ import {
 import { horaLocalAhora, nuevoId } from "@/lib/recepcion/borrador";
 import { formatear } from "@/lib/recepcion/validacion";
 import { faltantesCerrarTanda, tandaPendienteDeTriturar } from "@/lib/trituracion/pasos";
+import { descartarTanda, tandaTieneDatos } from "@/lib/trituracion/registro";
 import { grupoCompleto } from "@/lib/trituracion/proceso";
 import {
   evaluarRecipiente,
@@ -31,6 +32,7 @@ import {
 import type { Fraccion, Recipiente, RegistroTrituracion, Tanda, TipoFraccion } from "@/lib/trituracion/tipos";
 import { Aviso, Checklist, NumeroInput, SectionCard, StyledInput } from "@/components/recepcion/WizardUI";
 import { PokaYokeCribas } from "../PokaYokeCribas";
+import { DialogoMotivo } from "@/components/comun/DialogoMotivo";
 import type { Cambiar } from "../AsistenteTrituracion";
 
 const kg = (n: number) => `${formatear(n, DECIMALES.kg)} kg`;
@@ -41,13 +43,18 @@ export function Paso4Clasificacion({
   huboFrutaRota,
   onToggle,
   cambiar,
+  edicion = false,
 }: {
   r: RegistroTrituracion;
   huboFrutaRota: boolean;
   onToggle: (id: string) => void;
   cambiar: Cambiar;
+  /** Edición del informe: las tandas cerradas se pueden corregir. */
+  edicion?: boolean;
 }) {
   const abierta = r.tandas.find((t) => !t.cerrada) ?? null;
+  // Tanda con datos a descartar: se pide firma y motivo (bitácora del registro).
+  const [descartando, setDescartando] = useState<number | null>(null);
   const setTanda = (numero: number, fn: (t: Tanda) => Tanda) =>
     cambiar((x) => ({ ...x, tandas: x.tandas.map((t) => (t.numero === numero ? fn(t) : t)) }));
 
@@ -65,7 +72,10 @@ export function Paso4Clasificacion({
 
   function cerrarTanda(t: Tanda) {
     if (!confirm(`¿Cerrar la tanda ${t.numero}? Quedará bloqueada para clasificación y lista para triturar.`)) return;
-    setTanda(t.numero, (x) => ({ ...x, cerrada: true, cerradaEn: new Date().toISOString() }));
+    const ahora = new Date().toISOString();
+    cambiar((x) => ({ ...x, tandas: x.tandas.map((y) => (y.numero === t.numero ? { ...y, cerrada: true, cerradaEn: ahora } : y)) }), {
+      sellar: true,
+    });
   }
 
   return (
@@ -94,8 +104,10 @@ export function Paso4Clasificacion({
 
       {/* Tandas */}
       {r.tandas.map((t) =>
-        t.cerrada ? (
+        t.cerrada && !edicion ? (
           <TandaCerrada key={t.numero} t={t} />
+        ) : t.cerrada ? (
+          <TandaAbierta key={t.numero} t={t} setTanda={(fn) => setTanda(t.numero, fn)} corrigiendo />
         ) : (
           <TandaAbierta
             key={t.numero}
@@ -103,7 +115,11 @@ export function Paso4Clasificacion({
             setTanda={(fn) => setTanda(t.numero, fn)}
             onCerrar={() => cerrarTanda(t)}
             onDescartar={() => {
-              if (!confirm(`¿Descartar la tanda ${t.numero}? Se perderán sus recipientes y fracciones.`)) return;
+              if (tandaTieneDatos(t)) {
+                setDescartando(t.numero);
+                return;
+              }
+              if (!confirm(`¿Descartar la tanda ${t.numero}? Está vacía.`)) return;
               cambiar((x) => ({ ...x, tandas: x.tandas.filter((y) => y.numero !== t.numero) }));
             }}
           />
@@ -114,6 +130,22 @@ export function Paso4Clasificacion({
         <Aviso tono="info" titulo={`La suma clasificada y separada (${kg(totalClasificado)}) supera el peso de entrada (${kg(r.entrada.pesoDisponibleKg)})`}>
           Revise los pesos de los recipientes y sus taras.
         </Aviso>
+      )}
+
+      {descartando !== null && (
+        <DialogoMotivo
+          titulo={`Descartar la tanda ${descartando}`}
+          descripcion="La tanda ya tiene recipientes o fracciones registrados. Se eliminarán del registro y el descarte quedará en la bitácora con su detalle."
+          etiquetaConfirmar="Descartar la tanda"
+          peligro
+          onCancelar={() => setDescartando(null)}
+          onConfirmar={(f) => {
+            const ahora = new Date().toISOString();
+            const numero = descartando;
+            cambiar((x) => descartarTanda(x, numero, f, ahora));
+            setDescartando(null);
+          }}
+        />
       )}
 
       <div className="flex flex-col gap-2">
@@ -182,18 +214,25 @@ function TandaAbierta({
   setTanda,
   onCerrar,
   onDescartar,
+  corrigiendo = false,
 }: {
   t: Tanda;
   setTanda: (fn: (t: Tanda) => Tanda) => void;
-  onCerrar: () => void;
-  onDescartar: () => void;
+  onCerrar?: () => void;
+  onDescartar?: () => void;
+  /** Tanda cerrada en la edición del informe: se corrigen sus datos. */
+  corrigiendo?: boolean;
 }) {
   const tot = totalesTanda(t);
   const faltan = faltantesCerrarTanda(t);
   const alternar = (id: string) => setTanda((x) => ({ ...x, checks: { ...x.checks, [id]: !x.checks[id] } }));
 
   return (
-    <SectionCard title={`Tanda ${t.numero} · en clasificación`} subtitle="6. Identificar los recipientes y cerrar la tanda" icon={Layers}>
+    <SectionCard
+      title={`Tanda ${t.numero} · ${corrigiendo ? "corrección (cerrada)" : "en clasificación"}`}
+      subtitle="6. Identificar los recipientes y cerrar la tanda"
+      icon={Layers}
+    >
       <div className="flex flex-col gap-5">
         <Checklist items={CHECK_ACT6} checks={t.checks} onToggle={alternar} />
         <p className="text-xs font-medium text-slate-500">{CRITERIO_ACT6}</p>
@@ -227,17 +266,21 @@ function TandaAbierta({
             ))}
           </ul>
         )}
-        <button
-          type="button"
-          onClick={onCerrar}
-          disabled={faltan.length > 0}
-          className="self-start flex items-center gap-2 px-5 py-3 rounded-xl bg-gold text-white text-sm font-bold border border-gold-dark hover:bg-gold-dark disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
-        >
-          <Lock className="w-4 h-4" /> Cerrar tanda {t.numero}
-        </button>
-        <button type="button" onClick={onDescartar} className="self-start text-xs font-bold text-red-700 hover:underline">
-          Descartar la tanda {t.numero}
-        </button>
+        {!corrigiendo && (
+          <>
+            <button
+              type="button"
+              onClick={onCerrar}
+              disabled={faltan.length > 0}
+              className="self-start flex items-center gap-2 px-5 py-3 rounded-xl bg-gold text-white text-sm font-bold border border-gold-dark hover:bg-gold-dark disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
+            >
+              <Lock className="w-4 h-4" /> Cerrar tanda {t.numero}
+            </button>
+            <button type="button" onClick={onDescartar} className="self-start text-xs font-bold text-red-700 hover:underline">
+              Descartar la tanda {t.numero}
+            </button>
+          </>
+        )}
       </div>
     </SectionCard>
   );

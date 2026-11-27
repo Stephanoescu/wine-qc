@@ -6,6 +6,8 @@ import { GRUPOS, LIMITES_TRITURACION, type Grupo } from "@/lib/config/trituracio
 import type { LoteV2 } from "@/lib/recepcion/tipos";
 import { redondear, validarNumero } from "@/lib/recepcion/validacion";
 import { firmaVacia } from "./config-gaps";
+import type { Rol } from "@/lib/config/roles";
+import { formatear } from "@/lib/recepcion/validacion";
 import type { ControlSalida, Fraccion, Recipiente, RegistroTrituracion, Tanda, TipoFraccion } from "./tipos";
 
 /** Registro nuevo (EN_CURSO, paso 1) con la copia de la ficha de Recepción. */
@@ -151,4 +153,48 @@ export function gruposATriturar(t: Tanda, secuencia: readonly Grupo[]): Grupo[] 
  */
 export function tandaTriturada(t: Tanda, secuencia: readonly Grupo[], completo: (t: Tanda, g: Grupo) => boolean): boolean {
   return t.cerrada && gruposATriturar(t, secuencia).every((g) => completo(t, g));
+}
+
+/** La tanda tiene recipientes o fracciones registrados. */
+export function tandaTieneDatos(t: Tanda): boolean {
+  return t.fracciones.length > 0 || GRUPOS.some((g) => t.grupos[g].recipientes.length > 0);
+}
+
+/** Texto con lo registrado en la tanda (para la bitácora). */
+export function resumenTanda(t: Tanda): string {
+  const tot = totalesTanda(t);
+  const partes = GRUPOS.map(
+    (g) => `${g} ${t.grupos[g].noAparecio ? "no apareció" : `${formatear(tot.grupos[g], 2)} kg (${t.grupos[g].recipientes.length} recip.)`}`,
+  );
+  if (t.fracciones.length) {
+    partes.push(
+      (Object.keys(tot.fracciones) as TipoFraccion[])
+        .filter((k) => tot.fracciones[k] > 0)
+        .map((k) => `${NOMBRE_FRACCION[k]} ${formatear(tot.fracciones[k], 2)} kg`)
+        .join(", ") || "fracciones sin kg",
+    );
+  }
+  return partes.join(" · ");
+}
+
+/**
+ * Descarta una tanda abierta con datos: se quita del registro y queda en la
+ * bitácora con lo que tenía, quién lo descartó, su rol y el motivo.
+ */
+export function descartarTanda(
+  r: RegistroTrituracion,
+  numero: number,
+  firma: { por: string; rol: Rol; motivo: string },
+  ahora: string,
+): RegistroTrituracion {
+  const t = r.tandas.find((x) => x.numero === numero);
+  if (!t || t.cerrada) return r;
+  return {
+    ...r,
+    tandas: r.tandas.filter((x) => x.numero !== numero),
+    bitacora: [
+      ...r.bitacora,
+      { campo: `Tanda ${numero}`, anterior: resumenTanda(t), nuevo: "Descartada", por: firma.por, rol: firma.rol, motivo: firma.motivo, fecha: ahora },
+    ],
+  };
 }

@@ -2,21 +2,67 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import { CheckCircle2, Download, Loader2, Trash2, X } from "lucide-react";
+import type { Resultado } from "@/lib/almacen/local";
 import { deleteLote, normalizarCodigo } from "@/lib/recepcion/almacen";
 import { descargarRespaldo } from "@/lib/recepcion/respaldo";
 import type { LoteAlmacenado } from "@/lib/recepcion/tipos";
+import { trituracionDeLote } from "@/lib/trituracion/almacen";
 import { Aviso, FormField, StyledInput, inputBaseClasses } from "@/components/recepcion/WizardUI";
 
-/**
- * Confirmación para eliminar un lote: ofrece exportarlo antes y exige
- * escribir su código y un motivo (que queda en la bitácora de eliminaciones).
- */
+/** Eliminar un lote de Recepción (bloqueado si tiene un registro de Trituración vinculado). */
 export function DialogoEliminarLote({
   lote,
   onCancelar,
   onEliminado,
 }: {
   lote: LoteAlmacenado;
+  onCancelar: () => void;
+  onEliminado: () => void;
+}) {
+  const [vinculo] = useState(() => trituracionDeLote(lote.id));
+  return (
+    <DialogoEliminar
+      titulo="Eliminar lote"
+      codigo={lote.codigoLote}
+      queSeBorra="el lote y sus fotos"
+      etiquetaExportar="Exportar este lote (JSON)"
+      exportar={() => descargarRespaldo({ lotes: [lote] }).then(() => undefined)}
+      eliminar={(motivo, ahora) => deleteLote(lote.id, motivo, ahora)}
+      bloqueo={
+        vinculo
+          ? "Este lote tiene un registro de Trituración vinculado. Elimine primero ese registro (desde su informe en Trituración) y luego el lote."
+          : undefined
+      }
+      onCancelar={onCancelar}
+      onEliminado={onEliminado}
+    />
+  );
+}
+
+/**
+ * Confirmación de eliminación: ofrece exportar antes y exige escribir el código
+ * y un motivo (que queda en la bitácora de eliminaciones).
+ */
+export function DialogoEliminar({
+  titulo,
+  codigo: codigoEsperado,
+  queSeBorra,
+  etiquetaExportar,
+  exportar: exportarRespaldo,
+  eliminar: eliminarRegistro,
+  bloqueo,
+  onCancelar,
+  onEliminado,
+}: {
+  titulo: string;
+  codigo: string;
+  /** «el lote y sus fotos», «el registro de trituración y sus fotos»… */
+  queSeBorra: string;
+  etiquetaExportar: string;
+  exportar: () => Promise<void>;
+  eliminar: (motivo: string, ahora: string) => Resultado;
+  /** Si se indica, la eliminación no está permitida y se explica por qué. */
+  bloqueo?: string;
   onCancelar: () => void;
   onEliminado: () => void;
 }) {
@@ -41,17 +87,17 @@ export function DialogoEliminarLote({
     return () => window.removeEventListener("keydown", alTecla);
   }, [onCancelar]);
 
-  const codigoOk = normalizarCodigo(codigo) === normalizarCodigo(lote.codigoLote);
-  const puede = codigoOk && motivo.trim() !== "";
+  const codigoOk = normalizarCodigo(codigo) === normalizarCodigo(codigoEsperado);
+  const puede = !bloqueo && codigoOk && motivo.trim() !== "";
 
   async function exportar() {
     setExportando(true);
     setError(null);
     try {
-      await descargarRespaldo(lote);
+      await exportarRespaldo();
       setExportado(true);
     } catch {
-      setError("No se pudo exportar el respaldo del lote.");
+      setError("No se pudo exportar el respaldo.");
     } finally {
       setExportando(false);
     }
@@ -59,7 +105,7 @@ export function DialogoEliminarLote({
 
   function eliminar() {
     if (!puede) return;
-    const r = deleteLote(lote.id, motivo, new Date().toISOString());
+    const r = eliminarRegistro(motivo, new Date().toISOString());
     if (r.ok) onEliminado();
     else setError(r.error);
   }
@@ -79,9 +125,9 @@ export function DialogoEliminarLote({
         <div className="flex items-start justify-between gap-3 px-5 py-4 border-b border-slate-100 bg-red-50">
           <div>
             <h2 id="titulo-eliminar" className="text-base font-black text-red-800">
-              Eliminar lote
+              {titulo}
             </h2>
-            <p className="font-mono text-sm font-bold text-marine mt-0.5 break-all">{lote.codigoLote}</p>
+            <p className="font-mono text-sm font-bold text-marine mt-0.5 break-all">{codigoEsperado}</p>
           </div>
           <button type="button" onClick={onCancelar} className="p-1.5 rounded-lg text-slate-500 hover:bg-white" aria-label="Cerrar">
             <X className="w-5 h-5" />
@@ -90,14 +136,15 @@ export function DialogoEliminarLote({
 
         <div className="flex flex-col gap-5 p-5">
           <p className="text-sm font-medium text-slate-700 leading-relaxed">
-            Se borrarán el lote y sus fotos de este dispositivo. Esta acción no se puede deshacer.
+            Se borrarán {queSeBorra} de este dispositivo. Esta acción no se puede deshacer.
           </p>
+          {bloqueo && <Aviso tono="error" titulo="No se puede eliminar">{bloqueo}</Aviso>}
 
           {/* Paso 1: respaldo opcional */}
           <div className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 bg-slate-50">
             <p className="text-sm font-bold text-marine">1. Antes de borrar (recomendado)</p>
             <p className="text-xs font-medium text-slate-600">
-              Descargue un respaldo de este lote. Podrá restaurarlo con «Importar respaldo» en Reportes.
+              Descargue un respaldo. Podrá restaurarlo con «Importar respaldo» en Reportes.
             </p>
             <button
               ref={primerCampo}
@@ -113,7 +160,7 @@ export function DialogoEliminarLote({
               ) : (
                 <Download className="w-4 h-4" />
               )}
-              {exportado ? "Respaldo descargado" : "Exportar este lote (JSON)"}
+              {exportado ? "Respaldo descargado" : etiquetaExportar}
             </button>
           </div>
 
@@ -124,12 +171,12 @@ export function DialogoEliminarLote({
               label="Escriba el código del lote"
               required
               error={codigo.trim() && !codigoOk ? "El código no coincide" : undefined}
-              ayuda={`Debe coincidir con ${lote.codigoLote}`}
+              ayuda={`Debe coincidir con ${codigoEsperado}`}
             >
               <StyledInput
                 value={codigo}
                 onChange={(e) => setCodigo(e.target.value)}
-                placeholder={lote.codigoLote}
+                placeholder={codigoEsperado}
                 autoComplete="off"
                 autoCapitalize="characters"
                 spellCheck={false}

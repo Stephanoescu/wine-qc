@@ -55,16 +55,30 @@ const CHIP: Record<EstadoGrupoProceso, { cls: string; t: string }> = {
 };
 
 /** Paso 5 — Triturar con la configuración correspondiente (actividades 7, 8 y 9). */
-export function Paso5Trituracion({ r, vigente, cambiar }: { r: RegistroTrituracion; vigente: VersionTablaGaps | null; cambiar: Cambiar }) {
+export function Paso5Trituracion({
+  r,
+  vigente,
+  cambiar,
+  edicion = false,
+}: {
+  r: RegistroTrituracion;
+  vigente: VersionTablaGaps | null;
+  cambiar: Cambiar;
+  /** Edición del informe: todos los grupos triturados se pueden corregir. */
+  edicion?: boolean;
+}) {
   const orden = ordenTrituracion(r);
   const actual = orden.find((p) => p.estado === "actual") ?? null;
   const tandaActual = actual ? r.tandas.find((t) => t.numero === actual.tanda) ?? null : null;
 
-  const setProceso = (numero: number, g: Grupo, fn: (p: ProcesoGrupo) => ProcesoGrupo) =>
-    cambiar((x) => ({
-      ...x,
-      tandas: x.tandas.map((t) => (t.numero === numero && t.proceso[g] ? { ...t, proceso: { ...t.proceso, [g]: fn(t.proceso[g]!) } } : t)),
-    }));
+  const setProceso = (numero: number, g: Grupo, fn: (p: ProcesoGrupo) => ProcesoGrupo, sellar = false) =>
+    cambiar(
+      (x) => ({
+        ...x,
+        tandas: x.tandas.map((t) => (t.numero === numero && t.proceso[g] ? { ...t, proceso: { ...t.proceso, [g]: fn(t.proceso[g]!) } } : t)),
+      }),
+      { sellar },
+    );
 
   function iniciar(numero: number, g: Grupo) {
     const ini = iniciarProceso(vigente, g);
@@ -72,7 +86,7 @@ export function Paso5Trituracion({ r, vigente, cambiar }: { r: RegistroTrituraci
     cambiar((x) => ({
       ...x,
       tandas: x.tandas.map((t) => (t.numero === numero ? { ...t, proceso: { ...t.proceso, [g]: ini.proceso } } : t)),
-    }));
+    }), { sellar: true });
   }
 
   const tandasCerradas = r.tandas.filter((t) => t.cerrada);
@@ -104,12 +118,16 @@ export function Paso5Trituracion({ r, vigente, cambiar }: { r: RegistroTrituraci
         )}
       </SectionCard>
 
-      {/* Grupos completados (solo lectura) */}
+      {/* Grupos completados: solo lectura (en la edición del informe se corrigen) */}
       {orden
         .filter((p) => p.estado === "completo")
         .map((p) => {
           const t = r.tandas.find((x) => x.numero === p.tanda)!;
-          return <ResumenGrupo key={`${p.tanda}${p.grupo}`} t={t} g={p.grupo} />;
+          return edicion ? (
+            <GrupoEnProceso key={`${p.tanda}${p.grupo}`} t={t} g={p.grupo} set={(fn, sellar) => setProceso(t.numero, p.grupo, fn, sellar)} />
+          ) : (
+            <ResumenGrupo key={`${p.tanda}${p.grupo}`} t={t} g={p.grupo} />
+          );
         })}
 
       {/* Grupo actual */}
@@ -118,7 +136,7 @@ export function Paso5Trituracion({ r, vigente, cambiar }: { r: RegistroTrituraci
           <GrupoEnProceso
             t={tandaActual}
             g={actual.grupo}
-            set={(fn) => setProceso(tandaActual.numero, actual.grupo, fn)}
+            set={(fn, sellar) => setProceso(tandaActual.numero, actual.grupo, fn, sellar)}
           />
         ) : (
           <InicioGrupo t={tandaActual} g={actual.grupo} vigente={vigente} onIniciar={() => iniciar(tandaActual.numero, actual.grupo)} />
@@ -196,7 +214,16 @@ function ResumenGrupo({ t, g }: { t: Tanda; g: Grupo }) {
   );
 }
 
-function GrupoEnProceso({ t, g, set }: { t: Tanda; g: Grupo; set: (fn: (p: ProcesoGrupo) => ProcesoGrupo) => void }) {
+function GrupoEnProceso({
+  t,
+  g,
+  set,
+}: {
+  t: Tanda;
+  g: Grupo;
+  /** `sellar`: la acción confirma las firmas escritas (agregar control, registrar retención). */
+  set: (fn: (p: ProcesoGrupo) => ProcesoGrupo, sellar?: boolean) => void;
+}) {
   const p = t.proceso[g]!;
   const ev = evaluarProceso(t, g);
   const alternar = (id: string) => set((x) => ({ ...x, checks: { ...x.checks, [id]: !x.checks[id] } }));
@@ -205,7 +232,7 @@ function GrupoEnProceso({ t, g, set }: { t: Tanda; g: Grupo; set: (fn: (p: Proce
   const setControl = (id: string, cambios: Partial<ControlApertura>) =>
     set((x) => ({ ...x, controles: x.controles.map((c) => (c.id === id ? { ...c, ...cambios } : c)) }));
   const agregarControl = (momento: ControlApertura["momento"]) =>
-    set((x) => ({ ...x, controles: [...x.controles, controlVacio(nuevoId(), momento, horaLocalAhora())] }));
+    set((x) => ({ ...x, controles: [...x.controles, controlVacio(nuevoId(), momento, horaLocalAhora())] }), true);
   const tieneInicio = p.controles.some((c) => c.momento === "inicio");
   const perdidas = p.retenciones.filter((rt) => rt.origen === "perdida_identificacion");
 
@@ -317,7 +344,7 @@ function GrupoEnProceso({ t, g, set }: { t: Tanda; g: Grupo; set: (fn: (p: Proce
                     ...x.retenciones,
                     retencionNueva(nuevoId(), "control", { controlId: c.control.id, desdeControlId: c.ultimoConformeAnterior?.id ?? "" }),
                   ],
-                }))
+                }), true)
               }
               onRetencion={(fn) => c.retencion && setRet(c.retencion.id, fn)}
             />

@@ -186,11 +186,13 @@ export type LoteAlmacenado = LoteV2 | LoteLegacy;
 
 /** Registro de un lote eliminado (bitácora local). */
 export interface EntradaEliminacion {
-  /** Id del lote eliminado. */
+  /** Id del lote o del registro eliminado. */
   id: string;
   codigoLote: string;
-  /** Estado que tenía al eliminarse. */
-  estado: EstadoLote;
+  /** Estado que tenía al eliminarse (de Recepción o de Trituración). */
+  estado: EstadoLote | "EN_CURSO" | "CERRADO" | "CERRADO_CON_RETENIDOS";
+  /** Módulo del dato eliminado (sin valor = Recepción, entradas anteriores). */
+  modulo?: "recepcion" | "trituracion";
   motivo: string;
   /** ISO. */
   fecha: string;

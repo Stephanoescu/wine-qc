@@ -4,6 +4,7 @@ import React from "react";
 import { CircleStop, Eye, RotateCw } from "lucide-react";
 import { AVISO_DETENER_SALIDA, AVISO_FRUTA_ROTA, CHECK_ACT3, CRITERIO_ACT3 } from "@/lib/config/trituracion-textos";
 import { horaLocalAhora, nuevoId } from "@/lib/recepcion/borrador";
+import { escribirFirma } from "@/lib/trituracion/firmas";
 import { controlSalidaVacio } from "@/lib/trituracion/registro";
 import type { ControlSalida, RegistroTrituracion } from "@/lib/trituracion/tipos";
 import { Aviso, BadgeConformidad, Checklist, FormField, SectionCard, SiNo, StyledInput, inputBaseClasses } from "@/components/recepcion/WizardUI";
@@ -38,8 +39,11 @@ export function Paso3Salida({
   const anterior = cs[cs.length - 2];
   const setControl = (id: string, fn: (c: ControlSalida) => ControlSalida) =>
     cambiar((x) => ({ ...x, salida: { controles: x.salida.controles.map((c) => (c.id === id ? fn(c) : c)) } }));
+  // Registrar o repetir el control confirma las firmas escritas (p. ej. la verificación de Producción).
   const nuevoControl = () =>
-    cambiar((x) => ({ ...x, salida: { controles: [...x.salida.controles, controlSalidaVacio(nuevoId(), horaLocalAhora())] } }));
+    cambiar((x) => ({ ...x, salida: { controles: [...x.salida.controles, controlSalidaVacio(nuevoId(), horaLocalAhora())] } }), {
+      sellar: true,
+    });
 
   const completo = actual && actual.resultado !== null && actual.tallosObservados !== null;
   const noConforme = completo && (actual.resultado === "fruta_rota" || actual.tallosObservados === true);
@@ -157,7 +161,7 @@ export function Paso3Salida({
                   nombre={actual.verificaProduccion.nombre}
                   rol="Producción"
                   rolFijo="Producción"
-                  onNombre={(nombre) => setControl(actual.id, (c) => ({ ...c, verificaProduccion: { ...c.verificaProduccion, nombre, rol: "Producción" } }))}
+                  onNombre={(nombre) => setControl(actual.id, (c) => ({ ...c, verificaProduccion: escribirFirma(c.verificaProduccion, nombre, "Producción") }))}
                 />
               </div>
             )}
