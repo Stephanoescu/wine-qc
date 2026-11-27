@@ -29,7 +29,7 @@ export function parseNumero(texto: string): number | null {
 }
 
 function fmtLimite(n: number): string {
-  return String(n);
+  return formatear(n, 3, 0);
 }
 
 /**
@@ -73,18 +73,32 @@ export function redondear(n: number, decimales = 3): number {
   return Math.round(n * f) / f;
 }
 
-const formateadores = new Map<number, Intl.NumberFormat>();
+const formateadores = new Map<string, Intl.NumberFormat>();
 
-/** Formatea un número para mostrarlo (es-PE: separador de miles "," y decimal "."). */
-export function formatear(n: number | null | undefined, decimales = 2): string {
+/** Separador de miles: espacio irrompible (evita confundir "1.900" con 1,9). */
+const SEPARADOR_MILES = " ";
+
+/**
+ * Formatea un número para mostrarlo con coma decimal: 1900,5 → "1 900,50".
+ * `decimales` es el máximo; `minimoDecimales` (por defecto igual) permite
+ * ocultar ceros finales: formatear(138.5, 2, 0) → "138,5".
+ */
+export function formatear(n: number | null | undefined, decimales = 2, minimoDecimales = decimales): string {
   if (n === null || n === undefined || !Number.isFinite(n)) return "—";
-  let f = formateadores.get(decimales);
+  const clave = `${minimoDecimales}-${decimales}`;
+  let f = formateadores.get(clave);
   if (!f) {
-    f = new Intl.NumberFormat("es-PE", {
-      minimumFractionDigits: decimales,
+    // Se formatea con un locale de referencia fijo y se reemplazan los separadores,
+    // para no depender de los datos regionales del navegador.
+    f = new Intl.NumberFormat("en-US", {
+      minimumFractionDigits: minimoDecimales,
       maximumFractionDigits: decimales,
+      useGrouping: true,
     });
-    formateadores.set(decimales, f);
+    formateadores.set(clave, f);
   }
-  return f.format(n);
+  return f
+    .format(n)
+    .replace(/,/g, SEPARADOR_MILES)
+    .replace(".", ",");
 }

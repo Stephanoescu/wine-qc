@@ -199,6 +199,19 @@ export const PARAMETROS_VISUALES: DefinicionParametroVisual[] = [
   },
 ];
 
+/** Parámetros que corresponden a "Uva dañada" en la separación de hallazgos. */
+export const PARAMETROS_UVA_DANIADA: ClaveParametroVisual[] = [
+  "podredumbre",
+  "bayasDaniadas",
+  "deshidratacion",
+  "bayasVerdes",
+];
+
+export const INCOHERENCIA_MATERIA_EXTRANA =
+  "Registró kg de materia extraña, pero «Materia extraña» está en «No se observa». Márquela como «Se observa» o corrija el peso.";
+export const INCOHERENCIA_UVA_DANIADA =
+  "Registró kg de uva dañada, pero ninguno de sus parámetros (podredumbre, bayas dañadas, deshidratación, bayas verdes) está en «Se observa». Marque el que corresponda o corrija el peso.";
+
 export const AVISO_PARAMETRO_OBSERVADO =
   "Identifique y aísle el lote, y avise a Calidad. Registre la decisión de Enología.";
 

@@ -70,7 +70,7 @@ export default function DashboardPage() {
                   Gráfico de control — pH
                 </h2>
                 <p className="text-xs text-zinc-600 mt-0.5">
-                  Lecturas cada hora · Rango aceptable: 5.0–10.0 pH
+                  Lecturas cada hora · Rango aceptable: 5,0–10,0 pH
                 </p>
               </div>
             </div>
@@ -97,9 +97,9 @@ export default function DashboardPage() {
           </h2>
           <div className="grid grid-cols-3 gap-4">
             {[
-              { param: "pH", value: "6.9", status: "ok", range: "5–10" },
-              { param: "Temperatura", value: "16.2 °C", status: "ok", range: "12–20 °C" },
-              { param: "Densidad", value: "1.042 g/mL", status: "ok", range: "0.990–1.100" },
+              { param: "pH", value: "6,9", status: "ok", range: "5–10" },
+              { param: "Temperatura", value: "16,2 °C", status: "ok", range: "12–20 °C" },
+              { param: "Densidad", value: "1,042 g/mL", status: "ok", range: "0,990–1,100" },
             ].map((item) => (
               <div key={item.param} className="flex flex-col gap-2 p-4 rounded-xl bg-zinc-800/50 border border-zinc-700/50">
                 <div className="flex items-center justify-between">

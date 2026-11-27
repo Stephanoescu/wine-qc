@@ -56,7 +56,7 @@ export function Paso7PH({
             mostrarDiferencia
             avisoDiferencia={{
               umbral: PH_DIFERENCIA_AVISO,
-              texto: avisoDiferenciaPh(formatear(PH_DIFERENCIA_AVISO, 1).replace(".", ",")),
+              texto: avisoDiferenciaPh(formatear(PH_DIFERENCIA_AVISO, 2, 1)),
             }}
           />
           <div className="sm:max-w-xs">

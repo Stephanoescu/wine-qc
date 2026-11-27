@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { formatear } from "@/lib/recepcion/validacion";
 import {
   CheckCircle2,
   ArrowRightLeft,
@@ -137,7 +138,7 @@ export function ParameterInput({
       <label className="text-sm font-medium text-zinc-400">
         {label}
         <span className="ml-1 text-zinc-600">
-          (rango: {min}–{max} {unit})
+          (rango: {formatear(min, 3, 0)}–{formatear(max, 3, 0)} {unit})
         </span>
       </label>
       <div className={`flex items-center rounded-xl border bg-zinc-800 overflow-hidden transition-colors ${
@@ -146,7 +147,7 @@ export function ParameterInput({
         <input
           type="number"
           step="0.1"
-          placeholder={`Ej: ${((min + max) / 2).toFixed(1)}`}
+          placeholder={`Ej: ${formatear((min + max) / 2, 1)}`}
           value={value}
           onChange={(e) => onChange(e.target.value)}
           className="flex-1 bg-transparent px-4 py-3 text-base text-zinc-100 placeholder:text-zinc-600 outline-none"
@@ -155,7 +156,7 @@ export function ParameterInput({
       </div>
       {hasError && (
         <p className="text-xs text-red-400 mt-0.5">
-          ⚠ Valor fuera del rango permitido ({min}–{max} {unit})
+          ⚠ Valor fuera del rango permitido ({formatear(min, 3, 0)}–{formatear(max, 3, 0)} {unit})
         </p>
       )}
     </div>

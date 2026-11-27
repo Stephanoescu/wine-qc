@@ -6,7 +6,10 @@ import { DECIMALES, FOTOS } from "@/lib/config/recepcion";
 import {
   AVISO_PARAMETRO_OBSERVADO,
   INSTRUCCIONES_INSPECCION_CAJAS,
+  INCOHERENCIA_MATERIA_EXTRANA,
+  INCOHERENCIA_UVA_DANIADA,
   INSTRUCCION_SEPARACION,
+  PARAMETROS_UVA_DANIADA,
   PARAMETROS_VISUALES,
   type DefinicionParametroVisual,
 } from "@/lib/config/recepcion-textos";
@@ -144,6 +147,16 @@ export function Paso5InspeccionCajas({
               error={estado.errores.materiaExtranaKg}
               pct={estado.materiaExtranaPct}
               provisional={contenido.provisional}
+              incoherencia={
+                estado.incoherencias.materiaExtrana && (
+                  <AvisoIncoherencia
+                    texto={INCOHERENCIA_MATERIA_EXTRANA}
+                    claves={["materiaExtrana"]}
+                    nombres={nombres}
+                    onObservado={onObservado}
+                  />
+                )
+              }
             />
             <CampoSeparado
               etiqueta="Peso de uva dañada (kg)"
@@ -153,6 +166,16 @@ export function Paso5InspeccionCajas({
               error={estado.errores.uvaDaniadaKg}
               pct={estado.uvaDaniadaPct}
               provisional={contenido.provisional}
+              incoherencia={
+                estado.incoherencias.uvaDaniada && (
+                  <AvisoIncoherencia
+                    texto={INCOHERENCIA_UVA_DANIADA}
+                    claves={PARAMETROS_UVA_DANIADA}
+                    nombres={nombres}
+                    onObservado={onObservado}
+                  />
+                )
+              }
             />
           </div>
 
@@ -174,6 +197,7 @@ function CampoSeparado({
   error,
   pct,
   provisional,
+  incoherencia,
 }: {
   etiqueta: string;
   formula: string;
@@ -182,18 +206,53 @@ function CampoSeparado({
   error?: string;
   pct: number | null;
   provisional: boolean;
+  incoherencia?: React.ReactNode;
 }) {
   return (
     <div className="flex flex-col gap-2 p-4 rounded-xl border border-slate-200 bg-slate-50">
       <FormField label={etiqueta} required error={error} ayuda="Ingrese 0 si no hubo hallazgos">
-        <NumeroInput unidad="kg" placeholder="0.00" value={valor} onChange={onChange} error={error} />
+        <NumeroInput unidad="kg" placeholder="0,00" value={valor} onChange={onChange} error={error} />
       </FormField>
       <p className="text-[11px] text-slate-500 font-medium leading-snug">{formula}</p>
       <p className="text-sm font-bold text-marine">
         = <span className="font-mono text-lg">{pct === null ? "—" : `${formatear(pct, DECIMALES.porcentaje)} %`}</span>
         {provisional && pct !== null && <span className="ml-1.5 text-xs text-amber-700">(provisional)</span>}
       </p>
+      {incoherencia}
     </div>
+  );
+}
+
+/** Aviso de kg registrados con el parámetro en "No se observa", con atajo para marcarlo. */
+function AvisoIncoherencia({
+  texto,
+  claves,
+  nombres,
+  onObservado,
+}: {
+  texto: string;
+  claves: ClaveParametroVisual[];
+  nombres: Record<string, string>;
+  onObservado: Paso5Props["onObservado"];
+}) {
+  return (
+    <Aviso tono="alerta" titulo="Datos incoherentes">
+      <div className="flex flex-col gap-2">
+        <span>{texto}</span>
+        <div className="flex flex-wrap gap-2">
+          {claves.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => onObservado(c, true)}
+              className="px-3 py-1.5 rounded-lg border border-amber-300 bg-white text-xs font-bold text-amber-900 hover:bg-amber-100"
+            >
+              Marcar «{nombres[c]}» como Se observa
+            </button>
+          ))}
+        </div>
+      </div>
+    </Aviso>
   );
 }
 

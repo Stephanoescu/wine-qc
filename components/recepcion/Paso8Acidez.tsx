@@ -66,7 +66,7 @@ export function Paso8Acidez({
                 <FormField label="Valor (g/L como ácido tartárico)" required error={estado.errores.valor}>
                   <NumeroInput
                     unidad="g/L"
-                    placeholder="0.00"
+                    placeholder="0,00"
                     value={a.valor}
                     onChange={(valor) => onAcidez({ valor })}
                     error={estado.errores.valor}

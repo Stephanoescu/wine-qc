@@ -3,6 +3,9 @@
 import React from "react";
 import { AlertTriangle, ShieldAlert, CheckCircle2, X } from "lucide-react";
 import type { Alert } from "@/lib/mock-data";
+import { formatear } from "@/lib/recepcion/validacion";
+
+const num = (n: number) => formatear(n, 2, 0);
 
 // ─────────────────────────────────────────
 // AlertBadge — severity indicator
@@ -33,8 +36,8 @@ function OutOfRangeVisualizer({ alert }: { alert: Alert }) {
   return (
     <div className="flex flex-col gap-2">
       <div className="flex justify-between text-xs text-zinc-500 font-mono">
-        <span>{alert.min} {alert.unit}</span>
-        <span>{alert.max} {alert.unit}</span>
+        <span>{num(alert.min)} {alert.unit}</span>
+        <span>{num(alert.max)} {alert.unit}</span>
       </div>
       <div className="relative w-full h-3 rounded-full bg-zinc-800 overflow-hidden">
         {/* Safe zone */}
@@ -50,7 +53,7 @@ function OutOfRangeVisualizer({ alert }: { alert: Alert }) {
       <div className="flex justify-between text-xs">
         <span className="text-zinc-600">Mín. aceptable</span>
         <span className={`font-bold font-mono ${isOver ? "text-red-400" : "text-amber-400"}`}>
-          Lectura: {alert.value} {alert.unit}
+          Lectura: {num(alert.value)} {alert.unit}
         </span>
       </div>
     </div>
@@ -113,14 +116,14 @@ export function AlertModal({ alert, onDismiss }: AlertModalProps) {
               <p className={`text-3xl font-bold font-mono ${
                 alert.severity === "critical" ? "text-red-400" : "text-amber-400"
               }`}>
-                {alert.value}
+                {num(alert.value)}
               </p>
               <p className="text-sm text-zinc-500">{alert.unit}</p>
             </div>
             <div className="flex-1 rounded-xl bg-zinc-800 p-4 text-center">
               <p className="text-xs text-zinc-500 mb-1">Rango permitido</p>
               <p className="text-3xl font-bold font-mono text-emerald-400">
-                {alert.min}–{alert.max}
+                {num(alert.min)}–{num(alert.max)}
               </p>
               <p className="text-sm text-zinc-500">{alert.unit}</p>
             </div>
@@ -204,11 +207,11 @@ export function AlertInline({ alert, onResolve }: AlertInlineProps) {
             <p className="text-xs text-zinc-500">Lectura</p>
             <p className={`text-2xl font-bold font-mono ${
               alert.severity === "critical" ? "text-red-400" : "text-amber-400"
-            }`}>{alert.value} <span className="text-sm font-normal">{alert.unit}</span></p>
+            }`}>{num(alert.value)} <span className="text-sm font-normal">{alert.unit}</span></p>
           </div>
           <div className="flex-1 rounded-xl bg-zinc-800 p-3 text-center">
             <p className="text-xs text-zinc-500">Rango</p>
-            <p className="text-2xl font-bold font-mono text-emerald-400">{alert.min}–{alert.max} <span className="text-sm font-normal">{alert.unit}</span></p>
+            <p className="text-2xl font-bold font-mono text-emerald-400">{num(alert.min)}–{num(alert.max)} <span className="text-sm font-normal">{alert.unit}</span></p>
           </div>
         </div>
 

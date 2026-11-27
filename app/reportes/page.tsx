@@ -136,9 +136,9 @@ function DistribucionEstados({
                   key={e}
                   className={`${ESTILO_ESTADO[e].barra} flex items-center justify-center`}
                   style={{ width: `${pct}%` }}
-                  title={`${PLURAL[e]}: ${conteo[e]} (${pct.toFixed(1)}%)`}
+                  title={`${PLURAL[e]}: ${conteo[e]} (${formatear(pct, 1)} %)`}
                 >
-                  {pct > 10 && <span className="text-xs font-bold text-white drop-shadow-sm">{pct.toFixed(0)}%</span>}
+                  {pct > 10 && <span className="text-xs font-bold text-white drop-shadow-sm">{formatear(pct, 0)} %</span>}
                 </div>
               ) : null;
             })}
@@ -162,7 +162,7 @@ function DistribucionEstados({
                   </span>
                   <span className="text-right flex-shrink-0 w-20">
                     <span className="text-sm font-black text-marine font-mono">{conteo[e]}</span>
-                    <span className="text-xs font-bold text-slate-400 ml-1">({pct.toFixed(1)}%)</span>
+                    <span className="text-xs font-bold text-slate-400 ml-1">({formatear(pct, 1)} %)</span>
                   </span>
                 </button>
               );
@@ -576,6 +576,11 @@ function Contenido() {
       (!q || [f.codigoLote, f.proveedor, f.origen, f.variedad].some((t) => t.toLowerCase().includes(q))),
   );
   const legacy = filas.filter((f) => f.legacy).length;
+  // Menos de 1 000 kg se muestra en kg (138,5 kg); desde 1 000 kg, en toneladas con 2 decimales.
+  const volumen =
+    kpis.totalKg < 1000
+      ? { valor: formatear(kpis.totalKg, DECIMALES.kg, 0), unidad: "kg" }
+      : { valor: formatear(kpis.totalKg / 1000, 2), unidad: "ton" };
 
   const eliminar = (f: FilaReporte) => setAEliminar(f.id);
 
@@ -623,7 +628,7 @@ function Contenido() {
         <KPICard label="Retenidos" value={kpis.retenidos} icon={ESTILO_ESTADO.RETENIDO.Icon} color="amber" activo={filtro === "RETENIDO"} onClick={() => alternarFiltro("RETENIDO")} />
         <KPICard label="Rechazados" value={kpis.rechazados} icon={ESTILO_ESTADO.RECHAZADO.Icon} color="red" activo={filtro === "RECHAZADO"} onClick={() => alternarFiltro("RECHAZADO")} />
         <div className="col-span-2 lg:col-span-1">
-          <KPICard label="Volumen total" value={formatear(kpis.totalKg / 1000, 1)} unit="ton" icon={TrendingUp} color="gold" />
+          <KPICard label="Volumen total" value={volumen.valor} unit={volumen.unidad} icon={TrendingUp} color="gold" sub="Peso neto recibido" />
         </div>
       </div>
 

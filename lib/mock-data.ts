@@ -98,7 +98,7 @@ export const TRANSFER_STEPS: Step[] = [
     id: 7,
     title: "Inicio de la bomba de trasiego",
     description: "Active la bomba peristáltica P-03 al 60% de su capacidad.",
-    detail: "Confirme que el caudal en el flujómetro sea de 2.5 a 3.0 L/min antes de continuar.",
+    detail: "Confirme que el caudal en el flujómetro sea de 2,5 a 3,0 L/min antes de continuar.",
     icon: "pump",
   },
   {
@@ -171,7 +171,7 @@ export const DASHBOARD_KPIS: KPIMetric[] = [
   {
     id: "volume",
     label: "Volumen trasegado",
-    value: "18,450",
+    value: "18 450",
     unit: "litros",
     trend: "up",
     trendValue: "+8% vs. ayer",
@@ -213,7 +213,7 @@ export const RECENT_ALERTS: RecentAlert[] = [
   {
     id: "ALT-2024-041",
     parameter: "Temperatura",
-    value: "22.4 °C",
+    value: "22,4 °C",
     time: "07:15",
     tank: "A-04",
     resolved: true,
@@ -221,7 +221,7 @@ export const RECENT_ALERTS: RecentAlert[] = [
   {
     id: "ALT-2024-042",
     parameter: "pH",
-    value: "11.0 pH",
+    value: "11,0 pH",
     time: "09:42",
     tank: "A-04",
     resolved: false,

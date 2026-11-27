@@ -100,7 +100,7 @@ function CompletarTara({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar }
                 <NumeroInput
                   compacto
                   aria-label={`Tara de la jaba ${jaba.numero}`}
-                  placeholder="0.00"
+                  placeholder="0,00"
                   value={taras[jaba.numero] ?? ""}
                   onChange={(t) => setTaras((prev) => ({ ...prev, [jaba.numero]: t }))}
                   error={v.error}
@@ -135,7 +135,7 @@ function CompletarAcidez({ lote, onGuardar }: { lote: LoteV2; onGuardar: Guardar
   const a = lote.acidez;
   const [metodo, setMetodo] = useState(a.metodo);
   const [puntoFinal, setPuntoFinal] = useState(a.puntoFinal);
-  const [valor, setValor] = useState(a.valor === null ? "" : String(a.valor));
+  const [valor, setValor] = useState(a.valor === null ? "" : String(a.valor).replace(".", ","));
   const [confirmado, setConfirmado] = useState<boolean | null>(null);
   const [por, setPor] = useState("");
   const [error, setError] = useState<string | null>(null);

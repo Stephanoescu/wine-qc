@@ -143,7 +143,7 @@ function BloqueRonda({
               data-nav
               enterKeyHint="next"
               aria-label={`${nombre} ${et}`}
-              placeholder="0.0"
+              placeholder="0,0"
               value={valores[i] ?? ""}
               onChange={(v) => onLectura(i, v)}
               onKeyDown={onKeyDown}

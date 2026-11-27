@@ -15,6 +15,7 @@ import {
   CHECK_PESADO,
   CHECK_PREPARACION_MUESTRA,
   CHECK_TEMPERATURA,
+  PARAMETROS_UVA_DANIADA,
   PARAMETROS_VISUALES,
   type ItemChecklist,
 } from "@/lib/config/recepcion-textos";
@@ -249,6 +250,8 @@ export interface EstadoPaso5 extends EstadoPaso {
   materiaExtranaPct: number | null;
   uvaDaniadaPct: number | null;
   errores: { materiaExtranaKg?: string; uvaDaniadaKg?: string; exceso?: string; decision?: string };
+  /** kg > 0 con los parámetros correspondientes en "No se observa". */
+  incoherencias: { materiaExtrana: boolean; uvaDaniada: boolean };
 }
 
 export function estadoPaso5(b: BorradorLote): EstadoPaso5 {
@@ -280,6 +283,16 @@ export function estadoPaso5(b: BorradorLote): EstadoPaso5 {
   if (me.vacio || ud.vacio) faltantes.push("Registre el peso de materia extraña y de uva dañada (0 si no hay)");
   if (me.error || ud.error) faltantes.push("Corrija los pesos de la separación de hallazgos");
 
+  // Coherencia entre kg separados y parámetros observados.
+  const p = b.cajas.parametros;
+  const incoherencias = {
+    materiaExtrana: (me.valor ?? 0) > 0 && p.materiaExtrana.observado === false,
+    uvaDaniada:
+      (ud.valor ?? 0) > 0 && PARAMETROS_UVA_DANIADA.every((c) => p[c].observado === false),
+  };
+  if (incoherencias.materiaExtrana) faltantes.push("Materia extraña: hay kg registrados pero está en «No se observa»");
+  if (incoherencias.uvaDaniada) faltantes.push("Uva dañada: hay kg registrados pero ningún parámetro de daño está en «Se observa»");
+
   if (me.valor !== null && ud.valor !== null) {
     const separado = redondear(me.valor + ud.valor);
     if (separado > contenido.maximoKg) {
@@ -301,6 +314,7 @@ export function estadoPaso5(b: BorradorLote): EstadoPaso5 {
     materiaExtranaPct: porcentajeSobre(me.valor, contenido.kg),
     uvaDaniadaPct: porcentajeSobre(ud.valor, contenido.kg),
     errores,
+    incoherencias,
   };
 }
 

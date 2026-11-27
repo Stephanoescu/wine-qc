@@ -3,6 +3,7 @@
 import React from "react";
 import { CheckCircle2, AlertTriangle, Clock } from "lucide-react";
 import type { RecentAlert } from "@/lib/mock-data";
+import { formatear } from "@/lib/recepcion/validacion";
 
 interface AlertsTableProps {
   alerts: RecentAlert[];
@@ -86,7 +87,7 @@ export function SummaryRow({ items }: SummaryRowProps) {
       {items.map((item, i) => (
         <div key={i} className="flex-1 min-w-[120px] px-5 py-4">
           <p className="text-xs text-zinc-600 mb-1">{item.label}</p>
-          <p className={`text-sm font-semibold ${statusColors[item.status]}`}>{item.value}</p>
+          <p className={`text-sm font-semibold ${statusColors[item.status]}`}>{typeof item.value === "number" ? formatear(item.value, 2, 0) : item.value}</p>
         </div>
       ))}
     </div>

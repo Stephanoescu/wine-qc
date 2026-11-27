@@ -313,7 +313,8 @@ function AsistenteRecepcion() {
       break;
     }
     default: {
-      const e = estadoPaso9(b, { codigoDuplicado: existeCodigo(b.identificacion.codigoLote) });
+      // Tras un guardado exitoso el lote ya existe con ese código: no es un duplicado.
+      const e = estadoPaso9(b, { codigoDuplicado: !guardando && existeCodigo(b.identificacion.codigoLote) });
       estado = e;
       estado9 = e;
       contenido = (

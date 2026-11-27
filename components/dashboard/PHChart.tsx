@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { ChartDataPoint } from "@/lib/mock-data";
+import { formatear } from "@/lib/recepcion/validacion";
 
 // ─────────────────────────────────────────
 // PHChart — Static tailwind bar chart
@@ -67,7 +68,7 @@ export function PHChart({ data, yMin = 4, yMax = 12 }: PHChartProps) {
                       <div className={`px-2 py-1 rounded text-xs font-mono font-bold whitespace-nowrap ${
                         oor ? "bg-red-500 text-white" : "bg-zinc-700 text-zinc-200"
                       }`}>
-                        {point.value} pH
+                        {formatear(point.value, 1)} pH
                       </div>
                       <div className={`w-1.5 h-1.5 rotate-45 -mt-1 ${oor ? "bg-red-500" : "bg-zinc-700"}`} />
                     </div>

@@ -3,6 +3,7 @@
 import React from "react";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import type { KPIMetric } from "@/lib/mock-data";
+import { formatear } from "@/lib/recepcion/validacion";
 
 // ─────────────────────────────────────────
 // MetricCard
@@ -49,7 +50,7 @@ export function MetricCard({ metric }: MetricCardProps) {
       </p>
       <div className="flex items-end gap-2">
         <span className={`text-4xl font-bold font-mono leading-none ${colors.value}`}>
-          {metric.value}
+          {typeof metric.value === "number" ? formatear(metric.value, 2, 0) : metric.value}
         </span>
         {metric.unit && (
           <span className="text-sm text-zinc-600 mb-0.5">{metric.unit}</span>

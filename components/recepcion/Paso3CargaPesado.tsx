@@ -325,7 +325,7 @@ const FilaJabaRow = memo(function FilaJabaRow({
           compacto
           data-nav
           enterKeyHint="next"
-          placeholder="0.00"
+          placeholder="0,00"
           value={fila.pesoLleno}
           onChange={(v) => onJaba(indice, { pesoLleno: v })}
           onKeyDown={onKeyDown}
@@ -350,7 +350,7 @@ const FilaJabaRow = memo(function FilaJabaRow({
                     compacto
                     data-nav
                     enterKeyHint="next"
-                    placeholder="0.00"
+                    placeholder="0,00"
                     value={fila.tara}
                     onChange={(v) => onJaba(indice, { tara: v })}
                     onKeyDown={onKeyDown}
