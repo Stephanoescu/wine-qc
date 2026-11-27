@@ -3,7 +3,8 @@
 // editado por, rol y motivo obligatorios; bitácora campo por campo;
 // se recalcula el estado del registro. Funciones puras.
 // ============================================================
-import { GRUPOS, SECUENCIA_TRITURACION } from "@/lib/config/trituracion";
+import { GRUPOS, LIMITES_TRITURACION, SECUENCIA_TRITURACION } from "@/lib/config/trituracion";
+import { formatear, redondear, validarNumero } from "@/lib/recepcion/validacion";
 import type { Rol } from "@/lib/config/roles";
 import type { CambioSinFirma } from "@/lib/recepcion/lote";
 import { evaluarControl } from "./control";
@@ -100,6 +101,48 @@ export function diffRegistro(antes: RegistroTrituracion, despues: RegistroTritur
   return out;
 }
 
+export interface EntregaExigida {
+  tanda: number;
+  grupo: (typeof SECUENCIA_TRITURACION)[number];
+  /** kg de las retenciones que pasaron de «No entregar» a «Autorizar entrega» en esta edición. */
+  kgAutorizados: number;
+  /** kg entregados que se agregaron en esta edición para ese grupo y tanda. */
+  kgNuevaEntrega: number;
+  /** La entrega nueva cubre lo autorizado y cada entrega tiene kg, hora y destino. */
+  cumplida: boolean;
+}
+
+const kgDe = (t: string) => validarNumero(t, LIMITES_TRITURACION.kgTriturados).valor ?? 0;
+
+/**
+ * Retenciones que en esta edición pasan de «No entregar» a «Autorizar entrega»:
+ * la misma edición debe registrar la entrega de ese material (kg, hora y destino).
+ */
+export function entregasExigidasPorEdicion(antes: RegistroTrituracion, editado: RegistroTrituracion): EntregaExigida[] {
+  const out: EntregaExigida[] = [];
+  for (const t of editado.tandas) {
+    const ta = antes.tandas.find((x) => x.numero === t.numero);
+    for (const g of SECUENCIA_TRITURACION) {
+      const p = t.proceso[g];
+      if (!p) continue;
+      const kgAutorizados = redondear(
+        p.retenciones
+          .filter((rt) => {
+            const previa = ta?.proceso[g]?.retenciones.find((x) => x.id === rt.id);
+            return previa?.disposicion.decision === "no_entregar" && rt.disposicion.decision === "autorizar_entrega";
+          })
+          .reduce((s, rt) => s + kgDe(rt.kg), 0),
+      );
+      if (kgAutorizados <= 0) continue;
+      const entregas = (r: RegistroTrituracion) => r.entrega.entregas.filter((e) => e.tanda === t.numero && e.grupo === g);
+      const kgNuevaEntrega = redondear(entregas(editado).reduce((s, e) => s + kgDe(e.kg), 0) - entregas(antes).reduce((s, e) => s + kgDe(e.kg), 0));
+      const completas = entregas(editado).every((e) => kgDe(e.kg) > 0 && !!e.hora && e.destino.trim() !== "");
+      out.push({ tanda: t.numero, grupo: g, kgAutorizados, kgNuevaEntrega, cumplida: completas && kgNuevaEntrega + 1e-9 >= kgAutorizados });
+    }
+  }
+  return out;
+}
+
 export interface FirmaEdicionRegistro {
   por: string;
   rol: Rol;
@@ -120,6 +163,13 @@ export function previsualizarEdicionRegistro(antes: RegistroTrituracion, editado
 export function faltantesEdicionRegistro(antes: RegistroTrituracion, editado: RegistroTrituracion, firma: { por: string; rol: Rol | ""; motivo: string }): string[] {
   const f: string[] = [];
   if (antes.estado !== "EN_CURSO") f.push(...estadoPasoT6(editado).faltantes);
+  for (const x of entregasExigidasPorEdicion(antes, editado)) {
+    if (!x.cumplida) {
+      f.push(
+        `Tanda ${x.tanda} · grupo ${x.grupo}: se autorizó la entrega de ${formatear(x.kgAutorizados, 2)} kg retenidos; registre esa entrega (kg, hora y destino) antes de guardar`,
+      );
+    }
+  }
   if (previsualizarEdicionRegistro(antes, editado).cambios.length === 0) f.push("No hay cambios que guardar");
   if (!firma.por.trim() || !firma.rol || !firma.motivo.trim()) f.push("Complete Editado por, Rol y Motivo de la edición");
   return [...new Set(f)];

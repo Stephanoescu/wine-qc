@@ -159,6 +159,8 @@ export interface ProcesoGrupo {
   gap: {
     tablaVersionId: string;
     tablaVersion: number;
+    /** Aprobación de la versión usada (identifica la versión aunque su número se repita). */
+    tablaAprobacion?: FirmaRol;
     estandarMm: number;
     posicion: string;
     aplicadoMm: string;

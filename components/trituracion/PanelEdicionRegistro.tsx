@@ -5,6 +5,8 @@ import { FilePen } from "lucide-react";
 import type { Rol } from "@/lib/config/roles";
 import type { CambioSinFirma } from "@/lib/recepcion/lote";
 import type { RegistroTrituracion } from "@/lib/trituracion/tipos";
+import type { EntregaExigida } from "@/lib/trituracion/edicion";
+import { formatear } from "@/lib/recepcion/validacion";
 import { Aviso, FormField, SectionCard, inputBaseClasses } from "@/components/recepcion/WizardUI";
 import { CampoFirma } from "@/components/lote/CampoFirma";
 import { EstadoRegistroBadge } from "./EstadoRegistroBadge";
@@ -22,12 +24,15 @@ export function PanelEdicionRegistro({
   despues,
   firma,
   onFirma,
+  exigidas = [],
 }: {
   cambios: CambioSinFirma[];
   antes: RegistroTrituracion;
   despues: RegistroTrituracion;
   firma: FirmaEdicion;
   onFirma: (f: FirmaEdicion) => void;
+  /** Retenciones autorizadas en esta edición que exigen registrar su entrega. */
+  exigidas?: EntregaExigida[];
 }) {
   return (
     <SectionCard title="Edición del informe" subtitle="Los cambios quedan en la bitácora, que no se puede editar" icon={FilePen}>
@@ -58,6 +63,17 @@ export function PanelEdicionRegistro({
             </table>
           </div>
         )}
+        {exigidas.map((x) => (
+          <Aviso
+            key={`${x.tanda}${x.grupo}`}
+            tono={x.cumplida ? "ok" : "alerta"}
+            titulo={`Tanda ${x.tanda} · grupo ${x.grupo}: entrega autorizada de material retenido (${formatear(x.kgAutorizados, 2)} kg)`}
+          >
+            {x.cumplida
+              ? `Entrega registrada en esta edición: ${formatear(x.kgNuevaEntrega, 2)} kg.`
+              : `Registre en «Entrega por grupo y tanda» la entrega de ese material (kg, hora y destino). Registrado en esta edición: ${formatear(Math.max(0, x.kgNuevaEntrega), 2)} kg. Sin esa entrega no se puede guardar el cambio.`}
+          </Aviso>
+        ))}
         {antes.estado !== despues.estado && (
           <div className="flex flex-wrap items-center gap-2 text-sm font-medium text-slate-700">
             El estado cambia: <EstadoRegistroBadge estado={antes.estado} /> → <EstadoRegistroBadge estado={despues.estado} />

@@ -35,6 +35,7 @@ import { Aviso, Checklist, FormField, NumeroInput, SectionCard, StyledInput } fr
 import { CampoFirma } from "@/components/lote/CampoFirma";
 import { BadgeResultadoControl, ControlAperturaForm } from "../ControlAperturaForm";
 import { RetencionForm, firmar } from "./RetencionForm";
+import { AvisoConflictoGaps, textoVersion } from "../AvisoConflictoGaps";
 import type { Cambiar } from "../AsistenteTrituracion";
 
 const kg = (n: number | null) => (n === null ? "—" : `${formatear(n, DECIMALES.kg)} kg`);
@@ -60,9 +61,12 @@ export function Paso5Trituracion({
   vigente,
   cambiar,
   edicion = false,
+  conflicto = null,
 }: {
   r: RegistroTrituracion;
   vigente: VersionTablaGaps | null;
+  /** Conflicto de versiones con el mismo número (se usa la de aprobación más reciente). */
+  conflicto?: { version: number; versiones: VersionTablaGaps[] } | null;
   cambiar: Cambiar;
   /** Edición del informe: todos los grupos triturados se pueden corregir. */
   edicion?: boolean;
@@ -93,6 +97,7 @@ export function Paso5Trituracion({
 
   return (
     <div className="flex flex-col gap-6">
+      {conflicto && <AvisoConflictoGaps conflicto={conflicto} enlaceConfiguracion />}
       <SectionCard title="5. Triturar con la configuración correspondiente" subtitle="Secuencia P → M → G por tanda, sin intercalar grupos" icon={Cog}>
         {tandasCerradas.length === 0 ? (
           <Aviso tono="info" titulo="No hay tandas cerradas. Cierre una tanda en el paso 4." />
@@ -165,7 +170,7 @@ function InicioGrupo({ t, g, vigente, onIniciar }: { t: Tanda; g: Grupo; vigente
             <p className="text-xs font-bold uppercase tracking-widest text-gold-light">Gap estándar del grupo {g}</p>
             <p className="text-4xl font-black font-mono">{mm(gap.gapMm)}</p>
             <p className="text-sm text-white/80 mt-1">
-              Tabla versión {gap.version.version} · {gap.version.equipoModelo} · Posición o marca: {gap.posicion}
+              Tabla {textoVersion(gap.version, gap.version.creadaEn)} · {gap.version.equipoModelo} · Posición o marca: {gap.posicion}
             </p>
           </div>
           <button

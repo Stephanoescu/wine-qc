@@ -12,9 +12,10 @@ import { borrarFotos } from "@/lib/recepcion/fotos";
 import { esLegacy } from "@/lib/recepcion/tipos";
 import { saveRegistro } from "@/lib/trituracion/almacen";
 import { cerrarRegistro, estadoPasoT6 } from "@/lib/trituracion/cierre";
-import { getVigente } from "@/lib/trituracion/config-gaps";
+import { conflictoVigente, getVersiones, getVigente } from "@/lib/trituracion/config-gaps";
 import {
   aplicarEdicionRegistro,
+  entregasExigidasPorEdicion,
   faltantesEdicionRegistro,
   fotosDelRegistro,
   previsualizarEdicionRegistro,
@@ -70,6 +71,7 @@ export function AsistenteTrituracion({ inicial, editar = false }: { inicial: Reg
   const [terminado, setTerminado] = useState(false);
   // Tabla estándar vigente (se copia en cada grupo al iniciarlo).
   const [vigente] = useState(() => getVigente());
+  const [conflictoGaps] = useState(() => conflictoVigente(getVersiones()));
   // Ficha actual del lote en Recepción (para avisar si cambió después de recibirlo).
   const [lote] = useState(() => {
     const l = getLote(inicial.loteId);
@@ -168,7 +170,7 @@ export function AsistenteTrituracion({ inicial, editar = false }: { inicial: Reg
       break;
     case 5:
       estado = estadoPasoT5(r);
-      contenido = <Paso5Trituracion r={r} vigente={vigente} cambiar={cambiar} edicion={editar} />;
+      contenido = <Paso5Trituracion r={r} vigente={vigente} conflicto={conflictoGaps} cambiar={cambiar} edicion={editar} />;
       break;
     default: {
       if (editar) {
@@ -178,7 +180,14 @@ export function AsistenteTrituracion({ inicial, editar = false }: { inicial: Reg
         contenido = (
           <>
             <Paso6Entrega r={r} onToggle={alternar} cambiar={cambiar} />
-            <PanelEdicionRegistro cambios={vista.cambios} antes={inicial} despues={vista.registro} firma={firma} onFirma={setFirma} />
+            <PanelEdicionRegistro
+              cambios={vista.cambios}
+              antes={inicial}
+              despues={vista.registro}
+              firma={firma}
+              onFirma={setFirma}
+              exigidas={entregasExigidasPorEdicion(inicial, r)}
+            />
           </>
         );
       } else {

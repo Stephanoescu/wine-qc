@@ -10,7 +10,8 @@ import { getLotes } from "@/lib/recepcion/almacen";
 import { esLegacy, type LoteV2 } from "@/lib/recepcion/tipos";
 import { formatear } from "@/lib/recepcion/validacion";
 import { getRegistros } from "@/lib/trituracion/almacen";
-import { gapDeGrupo, getVigente } from "@/lib/trituracion/config-gaps";
+import { conflictoVigente, gapDeGrupo, getVersiones, getVigente } from "@/lib/trituracion/config-gaps";
+import { AvisoConflictoGaps } from "@/components/trituracion/AvisoConflictoGaps";
 import { elegibilidad } from "@/lib/trituracion/elegibilidad";
 import { enlaceNuevoRegistro, enlaceRegistro } from "@/lib/trituracion/rutas";
 import type { VersionTablaGaps } from "@/lib/trituracion/tipos";
@@ -41,7 +42,8 @@ export default function TrituracionPage() {
   );
 }
 
-function ResumenGaps({ vigente }: { vigente: VersionTablaGaps | null }) {
+function ResumenGaps({ vigente, versiones }: { vigente: VersionTablaGaps | null; versiones: VersionTablaGaps[] }) {
+  const conflicto = conflictoVigente(versiones);
   if (!vigente) {
     return (
       <Aviso tono="alerta" titulo="Sin tabla de gaps aprobada: no se puede triturar">
@@ -53,6 +55,8 @@ function ResumenGaps({ vigente }: { vigente: VersionTablaGaps | null }) {
     );
   }
   return (
+    <>
+    {conflicto && <AvisoConflictoGaps conflicto={conflicto} enlaceConfiguracion />}
     <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm flex flex-wrap items-center gap-x-6 gap-y-2">
       <p className="text-xs font-black uppercase tracking-wider text-slate-500">Tabla vigente · versión {vigente.version}</p>
       {GRUPOS.map((g) => {
@@ -71,6 +75,7 @@ function ResumenGaps({ vigente }: { vigente: VersionTablaGaps | null }) {
         );
       })}
     </div>
+    </>
   );
 }
 
@@ -82,7 +87,7 @@ function Contenido() {
     const listos = getLotes().filter(
       (l): l is LoteV2 => !esLegacy(l) && !conRegistro.has(l.id) && elegibilidad(l).ok,
     );
-    return { registros, listos, vigente: getVigente() };
+    return { registros, listos, vigente: getVigente(), versiones: getVersiones() };
   });
   const [busqueda, setBusqueda] = useState("");
   const q = busqueda.trim().toLowerCase();
@@ -106,7 +111,7 @@ function Contenido() {
         </Link>
       </div>
 
-      <ResumenGaps vigente={datos.vigente} />
+      <ResumenGaps vigente={datos.vigente} versiones={datos.versiones} />
 
       {/* Lotes listos */}
       <section className="rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">

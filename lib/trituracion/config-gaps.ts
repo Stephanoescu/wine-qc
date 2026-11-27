@@ -21,12 +21,43 @@ function esComprobacion(x: unknown): x is ComprobacionInicial {
   return tieneId(x) && typeof (x as { grupo?: unknown }).grupo === "string";
 }
 
-/** Versiones de la tabla, de la más reciente a la más antigua. */
-export function getVersiones(): VersionTablaGaps[] {
-  return leerLista(CLAVE_VERSIONES, esVersion).sort((a, b) => b.version - a.version);
+/** Fecha de aprobación de una versión (o de creación, si falta). */
+export function fechaAprobacion(v: VersionTablaGaps): string {
+  return v.aprobacion?.fecha || v.creadaEn || "";
 }
 
-/** Tabla vigente (la de mayor versión) o null si aún no hay ninguna aprobada. */
+/**
+ * Orden: mayor número primero; con el mismo número (conflicto tras importar
+ * respaldos de dos dispositivos), la de aprobación más reciente primero.
+ */
+export function ordenarVersiones(vs: VersionTablaGaps[]): VersionTablaGaps[] {
+  return [...vs].sort((a, b) => b.version - a.version || fechaAprobacion(b).localeCompare(fechaAprobacion(a)));
+}
+
+/** Versiones de la tabla, de la más reciente a la más antigua. */
+export function getVersiones(): VersionTablaGaps[] {
+  return ordenarVersiones(leerLista(CLAVE_VERSIONES, esVersion));
+}
+
+/** Números de versión repetidos (de mayor a menor) con sus versiones, la más reciente primero. */
+export function versionesDuplicadas(versiones: VersionTablaGaps[]): { version: number; versiones: VersionTablaGaps[] }[] {
+  const porNumero = new Map<number, VersionTablaGaps[]>();
+  for (const v of ordenarVersiones(versiones)) porNumero.set(v.version, [...(porNumero.get(v.version) ?? []), v]);
+  return [...porNumero.entries()].filter(([, vs]) => vs.length > 1).map(([version, vs]) => ({ version, versiones: vs }));
+}
+
+/**
+ * Conflicto activo: la versión vigente comparte su número con otra (pasa al importar
+ * respaldos de dos dispositivos). Se considera vigente la de aprobación más reciente
+ * y se pide aprobar una versión nueva, que deja de tener el número repetido.
+ */
+export function conflictoVigente(versiones: VersionTablaGaps[]): { version: number; versiones: VersionTablaGaps[] } | null {
+  const ord = ordenarVersiones(versiones);
+  if (!ord.length) return null;
+  return versionesDuplicadas(ord).find((d) => d.version === ord[0].version) ?? null;
+}
+
+/** Tabla vigente (la de mayor versión; con número repetido, la de aprobación más reciente) o null. */
 export function getVigente(): VersionTablaGaps | null {
   return getVersiones()[0] ?? null;
 }

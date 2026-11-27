@@ -9,6 +9,7 @@ import { getLote } from "@/lib/recepcion/almacen";
 import { descargarRespaldo } from "@/lib/recepcion/respaldo";
 import { esLegacy } from "@/lib/recepcion/tipos";
 import { deleteRegistro, getRegistro } from "@/lib/trituracion/almacen";
+import { getVersiones } from "@/lib/trituracion/config-gaps";
 import { useEsCliente } from "@/lib/use-es-cliente";
 import { Aviso } from "@/components/recepcion/WizardUI";
 import { EncabezadoPagina } from "@/components/comun/EncabezadoPagina";
@@ -54,7 +55,7 @@ function Informe({ id, cerrado, editado }: { id: string; cerrado: boolean; edita
   const [datos] = useState(() => {
     const r = getRegistro(id);
     const l = r ? getLote(r.loteId) : null;
-    return { r, pesoActual: l && !esLegacy(l) ? l.pesoDisponible.kg : null };
+    return { r, pesoActual: l && !esLegacy(l) ? l.pesoDisponible.kg : null, versiones: getVersiones() };
   });
   const [eliminando, setEliminando] = useState(false);
   const r = datos.r;
@@ -110,7 +111,7 @@ function Informe({ id, cerrado, editado }: { id: string; cerrado: boolean; edita
         )}
       </div>
 
-      <InformeTrituracion r={r} pesoActualRecepcion={datos.pesoActual} />
+      <InformeTrituracion r={r} pesoActualRecepcion={datos.pesoActual} versionesTabla={datos.versiones} />
 
       <div className="flex flex-col items-start gap-3 pt-4 border-t border-slate-200 print:hidden">
         <button

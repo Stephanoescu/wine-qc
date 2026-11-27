@@ -68,6 +68,7 @@ export function iniciarProceso(vigente: VersionTablaGaps | null, g: Grupo): Inic
       gap: {
         tablaVersionId: gap.version.id,
         tablaVersion: gap.version.version,
+        tablaAprobacion: { ...gap.version.aprobacion },
         estandarMm: gap.gapMm,
         posicion: gap.posicion,
         aplicadoMm: String(gap.gapMm).replace(".", ","),

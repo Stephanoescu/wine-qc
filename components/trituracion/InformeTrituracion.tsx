@@ -11,7 +11,8 @@ import { calcularBalance, type Balance } from "@/lib/trituracion/balance";
 import { evaluarControl } from "@/lib/trituracion/control";
 import { evaluarProceso } from "@/lib/trituracion/proceso";
 import { NOMBRE_FRACCION } from "@/lib/trituracion/registro";
-import type { FirmaRol, RegistroTrituracion, TipoFraccion } from "@/lib/trituracion/tipos";
+import type { FirmaRol, RegistroTrituracion, TipoFraccion, VersionTablaGaps } from "@/lib/trituracion/tipos";
+import { textoVersion } from "./AvisoConflictoGaps";
 import { Aviso, BadgeConformidad } from "@/components/recepcion/WizardUI";
 import { BitacoraCambios, conRol, fechaHora } from "@/components/lote/InformeLote";
 import { GaleriaFotos } from "@/components/lote/FotoMiniatura";
@@ -106,10 +107,24 @@ function ResultadosControles({ b }: { b: Balance }) {
 // ─────────────────────────────────────────
 // Informe
 // ─────────────────────────────────────────
-export function InformeTrituracion({ r, pesoActualRecepcion }: { r: RegistroTrituracion; pesoActualRecepcion: number | null }) {
+export function InformeTrituracion({
+  r,
+  pesoActualRecepcion,
+  versionesTabla = [],
+}: {
+  r: RegistroTrituracion;
+  pesoActualRecepcion: number | null;
+  /** Versiones de la tabla de gaps (para identificar las usadas en registros anteriores). */
+  versionesTabla?: VersionTablaGaps[];
+}) {
   const b = calcularBalance(r);
   const procesos = r.tandas.flatMap((t) => SECUENCIA_TRITURACION.filter((g) => t.proceso[g]).map((g) => ({ t, g, p: t.proceso[g]!, ev: evaluarProceso(t, g) })));
-  const versiones = [...new Set(procesos.map((x) => x.p.gap.tablaVersion))];
+  // Versiones usadas, identificadas por su aprobación (el número puede repetirse tras importar).
+  const usadas = new Map<string, string>();
+  for (const { p } of procesos) {
+    const v = versionesTabla.find((x) => x.id === p.gap.tablaVersionId);
+    usadas.set(p.gap.tablaVersionId, textoVersion({ version: p.gap.tablaVersion, aprobacion: p.gap.tablaAprobacion ?? v?.aprobacion }, v?.creadaEn));
+  }
   const cambioRecepcion = pesoActualRecepcion !== null && Math.abs(pesoActualRecepcion - r.entrada.pesoDisponibleKg) > 0.0005;
 
   const firmas: { rol: string; f: FirmaRol | { nombre: string; rol: string; fecha: string }; detalle: string }[] = [
@@ -168,7 +183,7 @@ export function InformeTrituracion({ r, pesoActualRecepcion }: { r: RegistroTrit
           </div>
           <div>
             <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Tabla de gaps usada</p>
-            <p className="text-sm font-bold text-marine">{versiones.length ? versiones.map((v) => `versión ${v}`).join(", ") : "—"}</p>
+            <p className="text-sm font-bold text-marine">{usadas.size ? [...usadas.values()].join("; ") : "—"}</p>
           </div>
         </div>
       </section>
@@ -266,7 +281,7 @@ export function InformeTrituracion({ r, pesoActualRecepcion }: { r: RegistroTrit
                     <td className="py-1.5 pr-3 font-bold text-marine whitespace-nowrap">
                       T{t.numero} · {g}
                     </td>
-                    <td className="py-1.5 pr-3">v{p.gap.tablaVersion}</td>
+                    <td className="py-1.5 pr-3 text-xs">{usadas.get(p.gap.tablaVersionId)}</td>
                     <td className="py-1.5 pr-3 text-right font-mono">{formatear(p.gap.estandarMm, 2, 0)} mm</td>
                     <td className="py-1.5 pr-3 text-right font-mono">{p.gap.aplicadoMm} mm</td>
                     <td className="py-1.5 pr-3">{p.gap.mantenimiento.nombre || "—"}</td>

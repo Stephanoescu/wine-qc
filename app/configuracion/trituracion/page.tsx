@@ -8,6 +8,8 @@ import { fechaLocalHoy } from "@/lib/recepcion/borrador";
 import { formatear, parseNumero } from "@/lib/recepcion/validacion";
 import {
   comprobacionUsada,
+  conflictoVigente,
+  versionesDuplicadas,
   deleteComprobacion,
   filaGapVacia,
   getComprobaciones,
@@ -21,6 +23,7 @@ import { Aviso, SectionCard } from "@/components/recepcion/WizardUI";
 import { EncabezadoPagina } from "@/components/comun/EncabezadoPagina";
 import { fechaCorta } from "@/components/lote/InformeLote";
 import { TablaGaps } from "@/components/trituracion/TablaGaps";
+import { AvisoConflictoGaps, textoVersion } from "@/components/trituracion/AvisoConflictoGaps";
 import { FormularioVersion, type PropuestaVersion } from "@/components/trituracion/config/FormularioVersion";
 import { comprobacionVacia, FormularioComprobacion } from "@/components/trituracion/config/FormularioComprobacion";
 
@@ -49,6 +52,8 @@ function Configuracion() {
   const [mensaje, setMensaje] = useState<string | null>(null);
 
   const vigente = versiones[0] ?? null;
+  const conflicto = conflictoVigente(versiones);
+  const duplicados = new Set(versionesDuplicadas(versiones).map((d) => d.version));
   const recargar = () => {
     setVersiones(getVersiones());
     setComprobaciones(getComprobaciones());
@@ -129,9 +134,11 @@ function Configuracion() {
       </div>
       {mensaje && <Aviso tono="ok" titulo={mensaje} />}
 
+      {conflicto && <AvisoConflictoGaps conflicto={conflicto} onResolver={nuevaVersionDesdeVigente} />}
+
       {/* ── Tabla vigente ── */}
       <SectionCard
-        title={vigente ? `Tabla estándar vigente · versión ${vigente.version}` : "Tabla estándar vigente"}
+        title={vigente ? `Tabla estándar vigente · versión ${vigente.version}${conflicto ? " (número repetido)" : ""}` : "Tabla estándar vigente"}
         subtitle="Cada trituración guarda la versión que usó"
         icon={Settings2}
       >
@@ -250,7 +257,8 @@ function Configuracion() {
             {versiones.slice(1).map((v) => (
               <details key={v.id} className="rounded-xl border border-slate-200 bg-white">
                 <summary className="cursor-pointer px-4 py-3 text-sm font-bold text-marine">
-                  Versión {v.version} · {fechaCorta(v.creadaEn.slice(0, 10))} ·{" "}
+                  {textoVersion(v, v.creadaEn)}
+                  {duplicados.has(v.version) && <span className="ml-1 text-amber-700">(número repetido)</span>} ·{" "}
                   {GRUPOS.map((g) => {
                     const f = v.filas[g];
                     return `${g} ${f.noAplica ? "NO APLICA" : parseNumero(f.gapMm) !== null ? `${formatear(parseNumero(f.gapMm), 2, 0)} mm` : "—"}`;
