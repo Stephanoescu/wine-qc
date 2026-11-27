@@ -130,7 +130,8 @@ export default function InicioPage() {
             </span>
           </h1>
           <p className="text-slate-300 max-w-lg leading-relaxed font-medium">
-            Selecciona el módulo de trabajo. Todos los registros se guardan automáticamente en el sistema central.
+            Selecciona el módulo de trabajo. Los registros se guardan en este dispositivo (en el navegador), así que se
+            recomienda exportar un respaldo periódicamente desde Reportes.
           </p>
         </div>
       </div>

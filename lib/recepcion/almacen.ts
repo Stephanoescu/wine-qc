@@ -4,9 +4,11 @@
 // Las fotos viven en IndexedDB (ver fotos.ts). Solo en el cliente.
 // ============================================================
 import { borrarFotos } from "./fotos";
-import { esLegacy, type LoteAlmacenado, type LoteV2 } from "./tipos";
+import { estadoLegacy } from "./reporte";
+import { esLegacy, type EntradaEliminacion, type LoteAlmacenado, type LoteV2 } from "./tipos";
 
 const CLAVE_LOTES = "wine_qc_lotes";
+const CLAVE_ELIMINACIONES = "wine_qc_eliminaciones";
 
 export type Resultado = { ok: true } | { ok: false; error: string };
 
@@ -38,7 +40,7 @@ function escribir(lotes: LoteAlmacenado[]): Resultado {
   }
 }
 
-function normalizarCodigo(c: string): string {
+export function normalizarCodigo(c: string): string {
   return c.trim().toUpperCase();
 }
 
@@ -66,15 +68,55 @@ export function updateLote(lote: LoteV2): Resultado {
   return escribir(lotes);
 }
 
-/** Elimina el lote y sus fotos. */
-export function deleteLote(id: string): Resultado {
+/** Elimina el lote y sus fotos, y deja el motivo en la bitácora de eliminaciones. */
+export function deleteLote(id: string, motivo: string, ahora: string): Resultado {
   const lotes = getLotes();
   const lote = lotes.find((l) => l.id === id);
+  if (!lote) return { ok: false, error: "El lote ya no existe en este dispositivo." };
   const r = escribir(lotes.filter((l) => l.id !== id));
-  if (r.ok && lote && !esLegacy(lote)) {
-    borrarFotos(fotosDelLote(lote)).catch(() => {});
-  }
+  if (!r.ok) return r;
+  registrarEliminaciones([
+    {
+      id: lote.id,
+      codigoLote: lote.codigoLote,
+      estado: esLegacy(lote) ? estadoLegacy(lote) : lote.estado,
+      motivo: motivo.trim(),
+      fecha: ahora,
+    },
+  ]);
+  if (!esLegacy(lote)) borrarFotos(fotosDelLote(lote)).catch(() => {});
   return r;
+}
+
+// ─────────────────────────────────────────
+// Bitácora de eliminaciones
+// ─────────────────────────────────────────
+function esEliminacion(x: unknown): x is EntradaEliminacion {
+  const e = x as Partial<EntradaEliminacion> | null;
+  return !!e && typeof e.id === "string" && typeof e.codigoLote === "string" && typeof e.fecha === "string";
+}
+
+/** Más recientes primero. */
+export function getEliminaciones(): EntradaEliminacion[] {
+  try {
+    const datos: unknown = JSON.parse(localStorage.getItem(CLAVE_ELIMINACIONES) ?? "[]");
+    return Array.isArray(datos) ? datos.filter(esEliminacion).sort((a, b) => b.fecha.localeCompare(a.fecha)) : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Agrega entradas a la bitácora sin duplicar (mismo lote y fecha). */
+export function registrarEliminaciones(nuevas: EntradaEliminacion[]): void {
+  const actuales = getEliminaciones();
+  const claves = new Set(actuales.map((e) => `${e.id}|${e.fecha}`));
+  const agregar = nuevas.filter((e) => esEliminacion(e) && !claves.has(`${e.id}|${e.fecha}`));
+  if (agregar.length === 0) return;
+  try {
+    localStorage.setItem(CLAVE_ELIMINACIONES, JSON.stringify([...agregar, ...actuales]));
+  } catch {
+    // Sin espacio: el lote ya se eliminó; la bitácora es auxiliar.
+  }
 }
 
 /** Sustituye todos los lotes (importación de respaldo). */

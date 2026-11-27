@@ -4,12 +4,13 @@ import React, { use, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { ArrowLeft, Plus, Printer, Trash2 } from "lucide-react";
-import { deleteLote, getLote, updateLote } from "@/lib/recepcion/almacen";
+import { getLote, updateLote } from "@/lib/recepcion/almacen";
 import { esLegacy, type LoteAlmacenado, type LoteV2 } from "@/lib/recepcion/tipos";
 import { useEsCliente } from "@/lib/use-es-cliente";
 import { Aviso } from "@/components/recepcion/WizardUI";
 import { InformeLegacy, InformeLote } from "@/components/lote/InformeLote";
 import { AccionesLote } from "@/components/lote/AccionesLote";
+import { DialogoEliminarLote } from "@/components/lote/EliminarLote";
 
 export default function DetalleLotePage({
   params,
@@ -63,7 +64,7 @@ export default function DetalleLotePage({
 function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
   // Solo en el navegador (ver useEsCliente): puede leer localStorage al iniciar.
   const [lote, setLote] = useState<LoteAlmacenado | null>(() => getLote(id));
-  const [error, setError] = useState<string | null>(null);
+  const [eliminando, setEliminando] = useState(false);
   const router = useRouter();
 
   if (!lote) {
@@ -79,14 +80,6 @@ function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
         </Link>
       </div>
     );
-  }
-
-  function eliminar() {
-    if (!lote) return;
-    if (!confirm(`¿Eliminar el lote ${lote.codigoLote}? Se borrarán también sus fotos. Esta acción no se puede deshacer.`)) return;
-    const r = deleteLote(lote.id);
-    if (r.ok) router.push("/reportes");
-    else setError(r.error);
   }
 
   function guardar(nuevoLote: LoteV2) {
@@ -119,16 +112,18 @@ function Detalle({ id, nuevo }: { id: string; nuevo: boolean }) {
         </>
       )}
       <div className="flex flex-col items-start gap-3 pt-4 border-t border-slate-200 print:hidden">
-        {error && <Aviso tono="error" titulo={error} />}
         <button
           type="button"
-          onClick={eliminar}
+          onClick={() => setEliminando(true)}
           className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-red-200 text-sm font-bold text-red-700 hover:bg-red-50"
         >
           <Trash2 className="w-4 h-4" />
           Eliminar lote
         </button>
       </div>
+      {eliminando && (
+        <DialogoEliminarLote lote={lote} onCancelar={() => setEliminando(false)} onEliminado={() => router.push("/reportes")} />
+      )}
     </div>
   );
 }

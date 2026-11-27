@@ -150,6 +150,18 @@ export interface LoteLegacy {
 
 export type LoteAlmacenado = LoteV2 | LoteLegacy;
 
+/** Registro de un lote eliminado (bitácora local). */
+export interface EntradaEliminacion {
+  /** Id del lote eliminado. */
+  id: string;
+  codigoLote: string;
+  /** Estado que tenía al eliminarse. */
+  estado: EstadoLote;
+  motivo: string;
+  /** ISO. */
+  fecha: string;
+}
+
 export function esLegacy(l: LoteAlmacenado): l is LoteLegacy {
   return !("version" in l);
 }

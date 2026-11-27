@@ -2,10 +2,17 @@
 // Respaldo JSON de los lotes (con fotos en base64) para /reportes.
 // Sirve también para pasar los lotes de un dispositivo a otro.
 // ============================================================
-import { fotosDelLote, getLotes, reemplazarLotes, type Resultado } from "./almacen";
+import {
+  fotosDelLote,
+  getEliminaciones,
+  getLotes,
+  reemplazarLotes,
+  registrarEliminaciones,
+  type Resultado,
+} from "./almacen";
 import { fechaLocalHoy } from "./borrador";
 import { guardarFoto, obtenerFoto } from "./fotos";
-import { esLegacy, type LoteAlmacenado } from "./tipos";
+import { esLegacy, type EntradaEliminacion, type LoteAlmacenado } from "./tipos";
 
 export const FORMATO_RESPALDO = "wine-qc-respaldo";
 export const VERSION_RESPALDO = 1;
@@ -17,6 +24,8 @@ export interface Respaldo {
   lotes: LoteAlmacenado[];
   /** id de foto → data URL (base64). */
   fotos: Record<string, string>;
+  /** Bitácora de lotes eliminados (solo en el respaldo completo; opcional). */
+  eliminaciones?: EntradaEliminacion[];
 }
 
 // ─────────────────────────────────────────
@@ -31,8 +40,12 @@ function blobADataUrl(blob: Blob): Promise<string> {
   });
 }
 
-export async function crearRespaldo(ahora = new Date()): Promise<{ respaldo: Respaldo; fotosFaltantes: number }> {
-  const lotes = getLotes();
+/** Respaldo de todos los lotes (con la bitácora de eliminaciones) o solo de los indicados. */
+export async function crearRespaldo(
+  ahora = new Date(),
+  soloLotes?: LoteAlmacenado[],
+): Promise<{ respaldo: Respaldo; fotosFaltantes: number }> {
+  const lotes = soloLotes ?? getLotes();
   const fotos: Record<string, string> = {};
   let fotosFaltantes = 0;
   for (const l of lotes) {
@@ -54,24 +67,29 @@ export async function crearRespaldo(ahora = new Date()): Promise<{ respaldo: Res
       exportadoEn: ahora.toISOString(),
       lotes,
       fotos,
+      ...(soloLotes ? {} : { eliminaciones: getEliminaciones() }),
     },
     fotosFaltantes,
   };
 }
 
-export function nombreArchivoRespaldo(ahora = new Date()): string {
-  return `wine-qc-respaldo-${fechaLocalHoy(ahora)}.json`;
+/** wine-qc-respaldo-AAAA-MM-DD.json, o wine-qc-respaldo-<código>-AAAA-MM-DD.json para un solo lote. */
+export function nombreArchivoRespaldo(ahora = new Date(), codigoLote?: string): string {
+  const codigo = codigoLote ? `${codigoLote.trim().replace(/[^\w.-]+/g, "_")}-` : "";
+  return `wine-qc-respaldo-${codigo}${fechaLocalHoy(ahora)}.json`;
 }
 
-/** Genera el respaldo y lo descarga como archivo. */
-export async function descargarRespaldo(): Promise<{ lotes: number; fotos: number; fotosFaltantes: number }> {
+/** Genera el respaldo (de todo, o de un solo lote) y lo descarga como archivo. */
+export async function descargarRespaldo(
+  soloLote?: LoteAlmacenado,
+): Promise<{ lotes: number; fotos: number; fotosFaltantes: number }> {
   const ahora = new Date();
-  const { respaldo, fotosFaltantes } = await crearRespaldo(ahora);
+  const { respaldo, fotosFaltantes } = await crearRespaldo(ahora, soloLote ? [soloLote] : undefined);
   const blob = new Blob([JSON.stringify(respaldo)], { type: "application/json" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = nombreArchivoRespaldo(ahora);
+  a.download = nombreArchivoRespaldo(ahora, soloLote?.codigoLote);
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -109,7 +127,13 @@ export function analizarRespaldo(texto: string): Respaldo {
       if (typeof url === "string" && url.startsWith("data:image/")) fotos[id] = url;
     }
   }
-  return { formato: FORMATO_RESPALDO, version: d.version, exportadoEn: String(d.exportadoEn ?? ""), lotes, fotos };
+  const eliminaciones = Array.isArray(d.eliminaciones)
+    ? d.eliminaciones.filter(
+        (e): e is EntradaEliminacion =>
+          !!e && typeof e.id === "string" && typeof e.codigoLote === "string" && typeof e.fecha === "string",
+      )
+    : [];
+  return { formato: FORMATO_RESPALDO, version: d.version, exportadoEn: String(d.exportadoEn ?? ""), lotes, fotos, eliminaciones };
 }
 
 function marcaTiempo(l: LoteAlmacenado): string {
@@ -178,5 +202,6 @@ export async function aplicarImportacion(
     }
   }
   const r = reemplazarLotes(plan.resultado);
+  if (r.ok && respaldo.eliminaciones?.length) registrarEliminaciones(respaldo.eliminaciones);
   return r.ok ? { ok: true, fotosRestauradas } : r;
 }

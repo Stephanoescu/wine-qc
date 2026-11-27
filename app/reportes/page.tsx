@@ -18,7 +18,7 @@ import {
   Upload,
 } from "lucide-react";
 import { DECIMALES } from "@/lib/config/recepcion";
-import { deleteLote, getLotes } from "@/lib/recepcion/almacen";
+import { getEliminaciones, getLotes } from "@/lib/recepcion/almacen";
 import { calcularKPIs, enRango, filaReporte, type FilaReporte } from "@/lib/recepcion/reporte";
 import {
   aplicarImportacion,
@@ -33,7 +33,8 @@ import { formatear } from "@/lib/recepcion/validacion";
 import { useEsCliente } from "@/lib/use-es-cliente";
 import { Aviso } from "@/components/recepcion/WizardUI";
 import { EstadoBadge, ESTILO_ESTADO } from "@/components/lote/EstadoBadge";
-import { fechaCorta } from "@/components/lote/InformeLote";
+import { DialogoEliminarLote } from "@/components/lote/EliminarLote";
+import { fechaCorta, fechaHora } from "@/components/lote/InformeLote";
 
 const ESTADOS: EstadoLote[] = ["LIBERADO", "RETENIDO", "RECHAZADO"];
 const PLURAL: Record<EstadoLote, string> = { LIBERADO: "Liberados", RETENIDO: "Retenidos", RECHAZADO: "Rechazados" };
@@ -389,7 +390,13 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
   const archivo = useRef<HTMLInputElement>(null);
   const [ocupado, setOcupado] = useState<"exportar" | "importar" | null>(null);
   const [mensaje, setMensaje] = useState<{ tono: "ok" | "error" | "alerta"; texto: string } | null>(null);
-  const [pendiente, setPendiente] = useState<{ plan: PlanImportacion; respaldo: Respaldo; nombre: string } | null>(null);
+  const [pendiente, setPendiente] = useState<{
+    plan: PlanImportacion;
+    respaldo: Respaldo;
+    nombre: string;
+    /** Lotes nuevos que figuran como eliminados en este dispositivo. */
+    eliminadosAqui: number;
+  } | null>(null);
 
   async function exportar() {
     setOcupado("exportar");
@@ -417,7 +424,10 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
     setPendiente(null);
     try {
       const respaldo = analizarRespaldo(await f.text());
-      setPendiente({ plan: planificarImportacion(actuales, respaldo.lotes), respaldo, nombre: f.name });
+      const plan = planificarImportacion(actuales, respaldo.lotes);
+      const idsEliminados = new Set(getEliminaciones().map((x) => x.id));
+      const eliminadosAqui = plan.nuevos.filter((l) => idsEliminados.has(l.id)).length;
+      setPendiente({ plan, respaldo, nombre: f.name, eliminadosAqui });
     } catch (err) {
       setMensaje({ tono: "error", texto: err instanceof Error ? err.message : "No se pudo leer el archivo." });
     }
@@ -477,6 +487,12 @@ function PanelRespaldo({ actuales, onImportado }: { actuales: LoteAlmacenado[]; 
               <strong>{pendiente.plan.actualizados.length} actualizado(s)</strong> (versión más reciente) y{" "}
               {pendiente.plan.sinCambios} sin cambios. Los lotes que solo están en este dispositivo se conservan.
             </span>
+            {pendiente.eliminadosAqui > 0 && (
+              <span className="font-bold text-amber-800">
+                {pendiente.eliminadosAqui} de los lotes nuevos se habían eliminado en este dispositivo: al importar volverán a
+                aparecer.
+              </span>
+            )}
             <div className="flex flex-wrap gap-3">
               <button
                 type="button"
@@ -542,9 +558,14 @@ function Contenido() {
   const [lotes, setLotes] = useState<LoteAlmacenado[]>(() => getLotes());
   const [filtro, setFiltro] = useState<EstadoLote | "todos">("todos");
   const [busqueda, setBusqueda] = useState("");
-  const [error, setError] = useState<string | null>(null);
+  const [eliminaciones, setEliminaciones] = useState(() => getEliminaciones());
+  const [aEliminar, setAEliminar] = useState<string | null>(null);
 
-  const recargar = () => setLotes(getLotes());
+  const recargar = () => {
+    setLotes(getLotes());
+    setEliminaciones(getEliminaciones());
+  };
+  const loteAEliminar = aEliminar ? lotes.find((l) => l.id === aEliminar) ?? null : null;
   const filas = lotes.map(filaReporte);
   const kpis = calcularKPIs(filas);
   const conteo = { LIBERADO: kpis.liberados, RETENIDO: kpis.retenidos, RECHAZADO: kpis.rechazados };
@@ -556,14 +577,7 @@ function Contenido() {
   );
   const legacy = filas.filter((f) => f.legacy).length;
 
-  function eliminar(f: FilaReporte) {
-    if (!confirm(`¿Eliminar el lote ${f.codigoLote}? Se borrarán también sus fotos. Esta acción no se puede deshacer.`)) return;
-    const r = deleteLote(f.id);
-    if (r.ok) {
-      setError(null);
-      recargar();
-    } else setError(r.error);
-  }
+  const eliminar = (f: FilaReporte) => setAEliminar(f.id);
 
   const alternarFiltro = (e: EstadoLote) => setFiltro((f) => (f === e ? "todos" : e));
 
@@ -586,8 +600,6 @@ function Contenido() {
           <PanelRespaldo actuales={lotes} onImportado={recargar} />
         </div>
       </div>
-
-      {error && <Aviso tono="error" titulo={error} />}
 
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
         <KPICard
@@ -667,6 +679,37 @@ function Contenido() {
           </p>
         )}
       </div>
+
+      {eliminaciones.length > 0 && (
+        <details className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <summary className="cursor-pointer px-4 sm:px-6 py-4 text-sm font-bold text-marine">
+            Lotes eliminados ({eliminaciones.length})
+          </summary>
+          <ul className="divide-y divide-slate-100 border-t border-slate-100">
+            {eliminaciones.map((e) => (
+              <li key={`${e.id}|${e.fecha}`} className="px-4 sm:px-6 py-3 flex flex-col sm:flex-row sm:items-baseline gap-x-4 gap-y-1 text-sm">
+                <span className="font-mono text-xs text-slate-500 sm:w-32 flex-shrink-0">{fechaHora(e.fecha)}</span>
+                <span className="font-mono font-bold text-marine sm:w-36 flex-shrink-0 break-all">{e.codigoLote}</span>
+                <span className="flex-shrink-0">
+                  <EstadoBadge estado={e.estado} />
+                </span>
+                <span className="font-medium text-slate-600">{e.motivo}</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
+
+      {loteAEliminar && (
+        <DialogoEliminarLote
+          lote={loteAEliminar}
+          onCancelar={() => setAEliminar(null)}
+          onEliminado={() => {
+            setAEliminar(null);
+            recargar();
+          }}
+        />
+      )}
     </main>
   );
 }
