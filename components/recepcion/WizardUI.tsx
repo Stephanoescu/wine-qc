@@ -378,13 +378,18 @@ export function SiNo({
   etiquetaSi = "Sí",
   etiquetaNo = "No",
   pregunta,
+  siEsBueno = false,
 }: {
   value: boolean | null;
   onChange: (v: boolean) => void;
   etiquetaSi?: string;
   etiquetaNo?: string;
   pregunta?: string;
+  /** Colores invertidos: «Sí» en verde y «No» en ámbar (p. ej. «¿Alimentación estable?»). */
+  siEsBueno?: boolean;
 }) {
+  const verde = "bg-emerald-100 border-emerald-300 text-emerald-800";
+  const ambar = "bg-amber-100 border-amber-300 text-amber-800";
   const base =
     "flex-1 sm:flex-none px-4 py-2 text-sm font-bold rounded-lg border transition-colors whitespace-nowrap";
   return (
@@ -398,7 +403,9 @@ export function SiNo({
           onClick={() => onChange(true)}
           className={`${base} ${
             value === true
-              ? "bg-amber-100 border-amber-300 text-amber-800"
+              ? siEsBueno
+                ? verde
+                : ambar
               : "bg-white border-slate-300 text-slate-500 hover:bg-slate-50"
           }`}
         >
@@ -411,7 +418,9 @@ export function SiNo({
           onClick={() => onChange(false)}
           className={`${base} ${
             value === false
-              ? "bg-emerald-100 border-emerald-300 text-emerald-800"
+              ? siEsBueno
+                ? ambar
+                : verde
               : "bg-white border-slate-300 text-slate-500 hover:bg-slate-50"
           }`}
         >

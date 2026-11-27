@@ -12,6 +12,7 @@ import { Aviso } from "@/components/recepcion/WizardUI";
 import { InformeLegacy, InformeLote } from "@/components/lote/InformeLote";
 import { AccionesLote } from "@/components/lote/AccionesLote";
 import { DialogoEliminarLote } from "@/components/lote/EliminarLote";
+import { TrituracionDelLote } from "@/components/trituracion/TrituracionDelLote";
 
 export default function DetalleLotePage({
   params,
@@ -66,6 +67,7 @@ function Detalle({ id, nuevo, editado }: { id: string; nuevo: boolean; editado: 
   // Solo en el navegador (ver useEsCliente): puede leer localStorage al iniciar.
   const [lote, setLote] = useState<LoteAlmacenado | null>(() => getLote(id));
   const [eliminando, setEliminando] = useState(false);
+  const [vinculo] = useState(() => trituracionDeLote(id));
   const router = useRouter();
 
   if (!lote) {
@@ -86,7 +88,7 @@ function Detalle({ id, nuevo, editado }: { id: string; nuevo: boolean; editado: 
   function editar() {
     if (!lote) return;
     if (
-      trituracionDeLote(lote.id) &&
+      vinculo &&
       !confirm(
         "Este lote ya tiene un registro de Trituración vinculado. Los cambios no actualizan Trituración y, si cambia el peso disponible, deberá confirmar que Trituración fue informada. ¿Continuar con la edición?",
       )
@@ -140,6 +142,7 @@ function Detalle({ id, nuevo, editado }: { id: string; nuevo: boolean; editado: 
         <InformeLegacy lote={lote} />
       ) : (
         <>
+          <TrituracionDelLote lote={lote} vinculo={vinculo} />
           <InformeLote lote={lote} />
           <AccionesLote lote={lote} onGuardar={guardar} />
         </>

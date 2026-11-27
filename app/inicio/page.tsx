@@ -148,32 +148,32 @@ export default function InicioPage() {
             primary
           />
           <ProcedimientoCard
-            href="#"
-            icon={ArrowRightLeft}
-            title="Etapa Trasiego"
-            description="Control y registro de movimientos de vino entre depósitos."
+            href="/trituracion"
+            icon={Cog}
+            title="Despalillado, clasificación y trituración"
+            description="Recibe el lote liberado, despalilla, clasifica por cribas en G, M y P y tritura cada grupo con el gap de la tabla estándar."
             primary
           />
           <ProcedimientoCard
             href="#"
-            icon={Cog}
-            title="Proceso de Trituración"
-            description="Monitoreo del despalillado y estrujado mecánico de la uva."
-            primary
+            icon={ArrowRightLeft}
+            title="Etapa Trasiego"
+            description="Control y registro de movimientos de vino entre depósitos."
+            disabled
           />
           <ProcedimientoCard
             href="#"
             icon={FlaskConical}
             title="Dosificación de Correctores de Acidez"
             description="Ajustes y adiciones enológicas para la corrección del mosto."
-            primary
+            disabled
           />
           <ProcedimientoCard
             href="#"
             icon={Hourglass}
             title="Proceso Maceración (Horas)"
             description="Control de tiempos y temperatura durante el contacto pelicular."
-            primary
+            disabled
           />
         </div>
 
