@@ -9,12 +9,15 @@ export function EncabezadoPagina({
   titulo,
   children,
   ancho = "max-w-5xl",
+  inferior,
 }: {
   volverHref: string;
   volverTexto: string;
   titulo: string;
   children?: React.ReactNode;
   ancho?: string;
+  /** Contenido bajo la fila principal (p. ej. la barra de pasos). */
+  inferior?: React.ReactNode;
 }) {
   return (
     <header className="sticky top-0 z-10 border-b border-slate-200 bg-white/90 backdrop-blur-md shadow-sm print:hidden">
@@ -34,6 +37,7 @@ export function EncabezadoPagina({
         </div>
         {children}
       </div>
+      {inferior && <div className={`${ancho} mx-auto px-4 sm:px-6 pb-3 sm:pb-4`}>{inferior}</div>}
     </header>
   );
 }

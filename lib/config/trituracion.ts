@@ -48,4 +48,4 @@ export const LIMITES_TRITURACION = {
 } as const;
 
 /** Foto de las cribas de la bodega (actividad 4–5). Si no existe, se muestra un marcador y el diagrama. */
-export const IMAGEN_CRIBAS = "/img/cribas.jpg";
+export const IMAGEN_CRIBAS = "/images/cribas.jpg";
