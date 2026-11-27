@@ -97,7 +97,16 @@ export function Paso4Clasificacion({
         t.cerrada ? (
           <TandaCerrada key={t.numero} t={t} />
         ) : (
-          <TandaAbierta key={t.numero} t={t} setTanda={(fn) => setTanda(t.numero, fn)} onCerrar={() => cerrarTanda(t)} />
+          <TandaAbierta
+            key={t.numero}
+            t={t}
+            setTanda={(fn) => setTanda(t.numero, fn)}
+            onCerrar={() => cerrarTanda(t)}
+            onDescartar={() => {
+              if (!confirm(`¿Descartar la tanda ${t.numero}? Se perderán sus recipientes y fracciones.`)) return;
+              cambiar((x) => ({ ...x, tandas: x.tandas.filter((y) => y.numero !== t.numero) }));
+            }}
+          />
         ),
       )}
 
@@ -168,7 +177,17 @@ function TandaCerrada({ t }: { t: Tanda }) {
 // ─────────────────────────────────────────
 // Tanda abierta (en clasificación)
 // ─────────────────────────────────────────
-function TandaAbierta({ t, setTanda, onCerrar }: { t: Tanda; setTanda: (fn: (t: Tanda) => Tanda) => void; onCerrar: () => void }) {
+function TandaAbierta({
+  t,
+  setTanda,
+  onCerrar,
+  onDescartar,
+}: {
+  t: Tanda;
+  setTanda: (fn: (t: Tanda) => Tanda) => void;
+  onCerrar: () => void;
+  onDescartar: () => void;
+}) {
   const tot = totalesTanda(t);
   const faltan = faltantesCerrarTanda(t);
   const alternar = (id: string) => setTanda((x) => ({ ...x, checks: { ...x.checks, [id]: !x.checks[id] } }));
@@ -215,6 +234,9 @@ function TandaAbierta({ t, setTanda, onCerrar }: { t: Tanda; setTanda: (fn: (t: 
           className="self-start flex items-center gap-2 px-5 py-3 rounded-xl bg-gold text-white text-sm font-bold border border-gold-dark hover:bg-gold-dark disabled:bg-slate-100 disabled:text-slate-400 disabled:border-slate-200"
         >
           <Lock className="w-4 h-4" /> Cerrar tanda {t.numero}
+        </button>
+        <button type="button" onClick={onDescartar} className="self-start text-xs font-bold text-red-700 hover:underline">
+          Descartar la tanda {t.numero}
         </button>
       </div>
     </SectionCard>

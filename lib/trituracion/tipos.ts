@@ -141,6 +141,8 @@ export interface Fraccion {
 export interface Retencion {
   id: string;
   origen: "control" | "perdida_identificacion";
+  /** Control No conforme / No evaluable que originó la retención (origen «control»). */
+  controlId?: string;
   /** Control conforme desde el que se retiene (vacío = desde el inicio del grupo). */
   desdeControlId: string;
   kg: string;

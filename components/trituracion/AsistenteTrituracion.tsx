@@ -7,7 +7,8 @@ import { getLote } from "@/lib/recepcion/almacen";
 import { borrarFotos } from "@/lib/recepcion/fotos";
 import { esLegacy } from "@/lib/recepcion/tipos";
 import { saveRegistro } from "@/lib/trituracion/almacen";
-import { estadoPasoT1, estadoPasoT2, estadoPasoT3, estadoPasoT4, type EstadoPaso } from "@/lib/trituracion/pasos";
+import { getVigente } from "@/lib/trituracion/config-gaps";
+import { estadoPasoT1, estadoPasoT2, estadoPasoT3, estadoPasoT4, estadoPasoT5, type EstadoPaso } from "@/lib/trituracion/pasos";
 import type { RegistroTrituracion } from "@/lib/trituracion/tipos";
 import { NavButtons, SectionCard, WizardProgress } from "@/components/recepcion/WizardUI";
 import { EncabezadoPagina } from "@/components/comun/EncabezadoPagina";
@@ -16,6 +17,7 @@ import { Paso1Recibir } from "./pasos/Paso1Recibir";
 import { Paso2Despalillar } from "./pasos/Paso2Despalillar";
 import { Paso3Salida } from "./pasos/Paso3Salida";
 import { Paso4Clasificacion } from "./pasos/Paso4Clasificacion";
+import { Paso5Trituracion } from "./pasos/Paso5Trituracion";
 
 /** Actualización funcional del registro (las fotos se agregan de forma asíncrona). */
 export type Cambiar = (fn: (r: RegistroTrituracion) => RegistroTrituracion) => void;
@@ -29,6 +31,8 @@ const TOTAL = PASOS_TRITURACION.length;
 export function AsistenteTrituracion({ inicial }: { inicial: RegistroTrituracion }) {
   const [r, setR] = useState<RegistroTrituracion>(inicial);
   const [verRecorrido, setVerRecorrido] = useState(false);
+  // Tabla estándar vigente (se copia en cada grupo al iniciarlo).
+  const [vigente] = useState(() => getVigente());
   // Ficha actual del lote en Recepción (para avisar si cambió después de recibirlo).
   const [lote] = useState(() => {
     const l = getLote(inicial.loteId);
@@ -77,6 +81,10 @@ export function AsistenteTrituracion({ inicial }: { inicial: RegistroTrituracion
     case 4:
       estado = estadoPasoT4(r);
       contenido = <Paso4Clasificacion r={r} huboFrutaRota={e3.huboFrutaRota} onToggle={alternar} cambiar={cambiar} />;
+      break;
+    case 5:
+      estado = estadoPasoT5(r);
+      contenido = <Paso5Trituracion r={r} vigente={vigente} cambiar={cambiar} />;
       break;
     default:
       estado = { valido: false, faltantes: ["Disponible en la próxima fase"] };

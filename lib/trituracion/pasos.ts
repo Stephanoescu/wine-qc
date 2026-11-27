@@ -15,7 +15,7 @@ import {
 import type { ItemChecklist } from "@/lib/config/recepcion-textos";
 import { contarMarcados, type EstadoPaso } from "@/lib/recepcion/pasos";
 import { validarNumero } from "@/lib/recepcion/validacion";
-import { grupoCompleto } from "./proceso";
+import { grupoActual, grupoCompleto } from "./proceso";
 import { evaluarRecipiente, tandaTriturada, totalesTanda } from "./registro";
 import type { RegistroTrituracion, Tanda } from "./tipos";
 
@@ -134,5 +134,16 @@ export function estadoPasoT4(r: RegistroTrituracion): EstadoPaso {
     if (x) f.push(x);
   }
   if (!r.tandas.some((t) => t.cerrada)) f.push("Cierre al menos una tanda para pasar a la trituración");
+  return { valido: f.length === 0, faltantes: f };
+}
+
+// ── Paso 5: triturar (actividades 7, 8 y 9) ──
+export function estadoPasoT5(r: RegistroTrituracion): EstadoPaso {
+  const f: string[] = [];
+  const abierta = r.tandas.find((t) => !t.cerrada);
+  if (abierta) f.push(`Cierre la tanda ${abierta.numero} en el paso 4 (o descártela si está vacía)`);
+  if (!r.tandas.some((t) => t.cerrada)) f.push("No hay tandas cerradas para triturar");
+  const actual = grupoActual(r);
+  if (actual) f.push(`Complete la trituración del grupo ${actual.grupo} de la tanda ${actual.tanda}`);
   return { valido: f.length === 0, faltantes: f };
 }
