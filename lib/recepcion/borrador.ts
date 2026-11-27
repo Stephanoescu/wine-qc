@@ -3,7 +3,13 @@
 // (permite recuperar el registro si se recarga la página en el celular)
 // ============================================================
 import { VARIEDAD_POR_DEFECTO } from "@/lib/config/recepcion";
-import { BORRADOR_ESQUEMA, type BorradorLote } from "./tipos";
+import { PARAMETROS_VISUALES } from "@/lib/config/recepcion-textos";
+import {
+  BORRADOR_ESQUEMA,
+  type BorradorLote,
+  type ClaveParametroVisual,
+  type ParamVisualBorrador,
+} from "./tipos";
 
 const CLAVE_BORRADOR = "wine_qc_borrador";
 
@@ -33,6 +39,19 @@ export function nuevoId(): string {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
 
+function parametrosVacios(): Record<ClaveParametroVisual, ParamVisualBorrador> {
+  const vacio = (): ParamVisualBorrador => ({ observado: null, fotoIds: [], comentario: "" });
+  return Object.fromEntries(PARAMETROS_VISUALES.map((p) => [p.clave, vacio()])) as Record<
+    ClaveParametroVisual,
+    ParamVisualBorrador
+  >;
+}
+
+/** Ids de todas las fotos referenciadas por el borrador. */
+export function fotosDelBorrador(b: BorradorLote): string[] {
+  return Object.values(b.cajas.parametros).flatMap((p) => p.fotoIds);
+}
+
 export function crearBorradorVacio(): BorradorLote {
   const ahora = new Date();
   return {
@@ -50,6 +69,8 @@ export function crearBorradorVacio(): BorradorLote {
     },
     carga: { hayObservaciones: null, observaciones: [] },
     pesado: { usoFuncionTara: false, jabas: [] },
+    muestreo: { filas: [], pesoBolsaG: "" },
+    cajas: { parametros: parametrosVacios(), decisionEnologia: "", materiaExtranaKg: "", uvaDaniadaKg: "" },
   };
 }
 
@@ -69,6 +90,17 @@ export function cargarBorrador(): BorradorLote | null {
       identificacion: { ...vacio.identificacion, ...guardado.identificacion },
       carga: { ...vacio.carga, ...guardado.carga },
       pesado: { ...vacio.pesado, ...guardado.pesado },
+      muestreo: { ...vacio.muestreo, ...guardado.muestreo },
+      cajas: {
+        ...vacio.cajas,
+        ...guardado.cajas,
+        parametros: Object.fromEntries(
+          PARAMETROS_VISUALES.map((p) => [
+            p.clave,
+            { ...vacio.cajas.parametros[p.clave], ...guardado.cajas?.parametros?.[p.clave] },
+          ]),
+        ) as BorradorLote["cajas"]["parametros"],
+      },
     };
   } catch {
     return null;

@@ -90,8 +90,10 @@ export interface LoteV2 {
     materiaExtranaKg: number;
     uvaDaniadaKg: number;
     contenidoInspeccionadoKg: number;
-    materiaExtranaPct: number;
-    uvaDaniadaPct: number;
+    /** Alguna jaba seleccionada tenía la tara pendiente: el contenido es parcial. */
+    contenidoProvisional: boolean;
+    materiaExtranaPct: number | null;
+    uvaDaniadaPct: number | null;
   };
   brix: { rondas: Ronda[] };
   ph: { rondas: Ronda[]; temperaturaJugo?: number };
@@ -176,6 +178,22 @@ export interface IdentificacionBorrador {
   codigoLote: string;
 }
 
+export interface FilaMuestra {
+  /** Id estable para la lista en React. */
+  id: string;
+  /** N° de jaba seleccionada (editable). */
+  jaba: string;
+  temperatura: string;
+}
+
+export interface ParamVisualBorrador {
+  /** null = aún no se eligió "Se observa" / "No se observa". */
+  observado: boolean | null;
+  /** Ids de fotos guardadas en IndexedDB (ver lib/recepcion/fotos.ts). */
+  fotoIds: string[];
+  comentario: string;
+}
+
 export interface BorradorLote {
   esquema: number;
   paso: number;
@@ -185,4 +203,13 @@ export interface BorradorLote {
   carga: { hayObservaciones: boolean | null; observaciones: FilaObsCarga[] };
   /** `jabas[i]` corresponde a la jaba N° i+1. Puede tener más filas que numJabas. */
   pesado: { usoFuncionTara: boolean; jabas: FilaJaba[] };
+  /** Paso 4: jabas seleccionadas (con su temperatura) y bolsa de bayas. */
+  muestreo: { filas: FilaMuestra[]; pesoBolsaG: string };
+  /** Paso 5: inspección de las cajas seleccionadas. */
+  cajas: {
+    parametros: Record<ClaveParametroVisual, ParamVisualBorrador>;
+    decisionEnologia: string;
+    materiaExtranaKg: string;
+    uvaDaniadaKg: string;
+  };
 }

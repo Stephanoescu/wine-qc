@@ -1,8 +1,8 @@
 // ============================================================
 // Lógica de evaluación del lote (funciones puras, sin React)
 // ============================================================
-import { LIMITES_ENTRADA, TABLA_MUESTREO } from "@/lib/config/recepcion";
-import type { FilaJaba } from "./tipos";
+import { LIMITES_ENTRADA, RANGOS, TABLA_MUESTREO } from "@/lib/config/recepcion";
+import type { FilaJaba, FilaMuestra } from "./tipos";
 import { redondear, validarNumero } from "./validacion";
 
 // ─────────────────────────────────────────
@@ -29,11 +29,62 @@ export function seleccionAleatoria(total: number, k: number, rng: () => number =
   return [...elegidos].sort((a, b) => a - b);
 }
 
+/** Con pocas jabas (tabla: "todas") se inspeccionan todas y la selección no se edita. */
+export function esMuestraTotal(totalJabas: number): boolean {
+  return totalJabas >= 1 && tamanoMuestra(totalJabas) >= totalJabas;
+}
+
+/** Nueva selección aleatoria, con las temperaturas vacías. */
+export function filasMuestraNuevas(
+  totalJabas: number,
+  crearId: () => string,
+  rng: () => number = Math.random,
+): FilaMuestra[] {
+  return seleccionAleatoria(totalJabas, tamanoMuestra(totalJabas), rng).map((j) => ({
+    id: crearId(),
+    jaba: String(j),
+    temperatura: "",
+  }));
+}
+
+/**
+ * Al entrar al paso 4: genera la selección si aún no existe o si el tamaño de
+ * muestra cambió (porque se corrigió el número de jabas). Si el tamaño no cambió,
+ * se conserva lo registrado. Con muestra total, las filas son las jabas 1..n y
+ * cada temperatura se conserva en su posición.
+ */
+export function asegurarSeleccion(
+  filas: FilaMuestra[],
+  totalJabas: number,
+  crearId: () => string,
+  rng: () => number = Math.random,
+): FilaMuestra[] {
+  if (totalJabas < 1) return filas;
+  if (esMuestraTotal(totalJabas)) {
+    return Array.from({ length: totalJabas }, (_, i) => ({
+      id: filas[i]?.id ?? crearId(),
+      jaba: String(i + 1),
+      temperatura: filas[i]?.temperatura ?? "",
+    }));
+  }
+  if (filas.length === tamanoMuestra(totalJabas)) return filas;
+  return filasMuestraNuevas(totalJabas, crearId, rng);
+}
+
+// ─────────────────────────────────────────
+// Temperatura (paso 4)
+// ─────────────────────────────────────────
+export function temperaturaConforme(t: number): boolean {
+  return t <= RANGOS.temperatura.maxConforme;
+}
+
 // ─────────────────────────────────────────
 // Pesado por jaba
 // ─────────────────────────────────────────
 export interface EvaluacionJaba {
   numero: number;
+  /** Lectura de la balanza, si es válida. */
+  lleno: number | null;
   neto: number | null;
   taraPendiente: boolean;
   errorLleno: string | null;
@@ -44,7 +95,7 @@ export interface EvaluacionJaba {
 
 export function evaluarJaba(fila: FilaJaba, numero: number, usoFuncionTara: boolean): EvaluacionJaba {
   const lleno = validarNumero(fila.pesoLleno, LIMITES_ENTRADA.pesoJabaKg);
-  const base = { numero, errorLleno: lleno.error, errorTara: null as string | null };
+  const base = { numero, lleno: lleno.valor, errorLleno: lleno.error, errorTara: null as string | null };
 
   if (usoFuncionTara) {
     return { ...base, neto: lleno.valor, taraPendiente: false, completa: lleno.valor !== null };
@@ -104,6 +155,57 @@ export function resumenPesado(jabas: FilaJaba[], numJabas: number, usoFuncionTar
     incompletas,
     parcial: pendientes.length > 0 || conError.length > 0 || incompletas.length > 0,
   };
+}
+
+// ─────────────────────────────────────────
+// Contenido inspeccionado (paso 5)
+// ─────────────────────────────────────────
+export interface ContenidoInspeccionado {
+  /** Suma de los netos conocidos de las jabas seleccionadas (kg). */
+  kg: number;
+  /** Alguna jaba seleccionada no tiene neto (tara pendiente o peso incompleto). */
+  provisional: boolean;
+  /** Jabas seleccionadas sin neto. */
+  sinNeto: number[];
+  /**
+   * Tope para validar los kg separados. Si es provisional, se suma el peso lleno
+   * de las jabas sin neto (el contenido real no puede superarlo).
+   */
+  maximoKg: number;
+  /** Neto de cada jaba seleccionada (null si falta). */
+  detalle: { jaba: number; neto: number | null }[];
+}
+
+export function contenidoInspeccionado(seleccion: number[], pesado: ResumenPesado): ContenidoInspeccionado {
+  let kg = 0;
+  let maximo = 0;
+  const sinNeto: number[] = [];
+  const detalle: ContenidoInspeccionado["detalle"] = [];
+  for (const jaba of seleccion) {
+    const f = pesado.filas[jaba - 1];
+    const neto = f?.neto ?? null;
+    detalle.push({ jaba, neto });
+    if (neto !== null) {
+      kg += neto;
+      maximo += neto;
+    } else {
+      sinNeto.push(jaba);
+      maximo += f?.lleno ?? 0;
+    }
+  }
+  return {
+    kg: redondear(kg),
+    provisional: sinNeto.length > 0,
+    sinNeto,
+    maximoKg: redondear(maximo),
+    detalle,
+  };
+}
+
+/** kg ÷ contenido × 100, o null si el contenido es 0. */
+export function porcentajeSobre(kg: number | null, contenidoKg: number): number | null {
+  if (kg === null || contenidoKg <= 0) return null;
+  return redondear((kg / contenidoKg) * 100, 2);
 }
 
 export const FILA_JABA_VACIA: FilaJaba = { pesoLleno: "", tara: "", taraPendiente: false };

@@ -5,6 +5,8 @@
 // el estado de las casillas se guarda por id en el borrador.
 // ============================================================
 
+import type { ClaveParametroVisual } from "@/lib/recepcion/tipos";
+
 export interface ItemChecklist {
   id: string;
   texto: string;
@@ -79,6 +81,13 @@ export const CHECK_PESADO: ItemChecklist[] = [
 ];
 
 // ── Paso 4 ────────────────────────────────────────────────
+export function textoTamanoMuestra(n: number): string {
+  return `Seleccione al azar ${n} jabas que debe inspeccionar (realice la toma desde distintas zonas y niveles de la carga).`;
+}
+
+export const TEMPERATURA_CONFORME = "Conforme";
+export const TEMPERATURA_NO_CONFORME = "No conforme — Avise a Enología";
+
 export const CHECK_PREPARACION_MUESTRA: ItemChecklist[] = [
   {
     id: "p4a.1",
@@ -137,6 +146,57 @@ export const CHECK_MUESTRA_BAYAS: ItemChecklist[] = [
 export const INSTRUCCIONES_INSPECCION_CAJAS: string[] = [
   "Revise una jaba seleccionada a la vez. Coloque la jaba sobre la mesa de inspección. Saque los racimos uno a uno sobre la mesa limpia y gírelos para ver ambos lados. Mire también el fondo de la caja. Registre el hallazgo. Adjunte una foto si corresponde.",
   "Busque hojas sueltas, tierra, piedras, plástico o madera. Observe la uva para detectar piel rota, arrugamiento, manchas marrones, moho o descomposición. Si percibe olor a vinagre o fermentación, registre el hallazgo.",
+];
+
+export interface DefinicionParametroVisual {
+  clave: ClaveParametroVisual;
+  nombre: string;
+  descripcion: string;
+  /** Imagen de referencia en /public; null si no hay. */
+  imagen: string | null;
+}
+
+/** Tarjetas del paso 5, en el orden en que se muestran. */
+export const PARAMETROS_VISUALES: DefinicionParametroVisual[] = [
+  {
+    clave: "podredumbre",
+    nombre: "Podredumbre / Moho",
+    descripcion:
+      "Bayas con crecimiento fúngico visible, descomposición, tejido blando o presencia de olores anormales.",
+    imagen: "/images/moho.jpeg",
+  },
+  {
+    clave: "bayasDaniadas",
+    nombre: "Bayas dañadas",
+    descripcion: "Bayas con ruptura de piel, pérdida de jugo, aplastamiento o daño mecánico evidente.",
+    imagen: "/images/daniadas.png",
+  },
+  {
+    clave: "deshidratacion",
+    nombre: "Deshidratación",
+    descripcion: "Bayas con arrugamiento marcado, pérdida de turgencia o signos evidentes de deshidratación.",
+    imagen: "/images/deshidratacion.png",
+  },
+  {
+    clave: "bayasVerdes",
+    nombre: "Bayas verdes",
+    descripcion:
+      "Bayas con desarrollo insuficiente de color, textura o condición aparente respecto del resto del lote.",
+    imagen: "/images/verdes.jpeg",
+  },
+  {
+    clave: "materiaExtrana",
+    nombre: "Materia extraña",
+    descripcion: "Hojas, tallos en exceso, tierra, piedras, plástico, madera, insectos u otros materiales ajenos a la uva.",
+    imagen: "/images/extrana.png",
+  },
+  {
+    clave: "olorVinagre",
+    nombre: "Olor a vinagre / fermentación",
+    descripcion:
+      "Olor agrio, a vinagre o a fermentación al abrir la caja o al manipular los racimos. Puede indicar bayas rotas que ya empezaron a fermentar.",
+    imagen: null,
+  },
 ];
 
 export const AVISO_PARAMETRO_OBSERVADO =

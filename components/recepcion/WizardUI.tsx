@@ -1,6 +1,6 @@
 "use client";
 
-import React from "react";
+import React, { useCallback, useRef } from "react";
 import {
   AlertTriangle,
   Check,
@@ -12,6 +12,27 @@ import {
   XCircle,
 } from "lucide-react";
 import type { ItemChecklist } from "@/lib/config/recepcion-textos";
+
+// ─────────────────────────────────────────
+// Enter (o "Siguiente" del teclado del celular) pasa al siguiente
+// input[data-nav] dentro del contenedor.
+// ─────────────────────────────────────────
+export function useNavegacionEnter<T extends HTMLElement = HTMLDivElement>() {
+  const contenedor = useRef<T>(null);
+  const alPresionarTecla = useCallback((e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    const campos = Array.from(contenedor.current?.querySelectorAll<HTMLInputElement>("input[data-nav]") ?? []);
+    const siguiente = campos[campos.indexOf(e.currentTarget) + 1];
+    if (siguiente) {
+      siguiente.focus();
+      siguiente.select();
+    } else {
+      e.currentTarget.blur();
+    }
+  }, []);
+  return { contenedor, alPresionarTecla };
+}
 
 // ─────────────────────────────────────────
 // Stepper Progress (compacto en móvil, completo desde sm)
