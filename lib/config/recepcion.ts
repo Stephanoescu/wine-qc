@@ -34,6 +34,9 @@ export const LIMITES_ENTRADA = {
   acidezGL: { min: 0, max: 30, minExclusivo: true },
 } as const;
 
+/** Lecturas por ronda en los pasos 6 (°Brix) y 7 (pH). */
+export const LECTURAS_POR_RONDA = { brix: 3, ph: 2 } as const;
+
 /**
  * Tamaño mínimo de muestra según el total de jabas.
  * `hasta` es inclusive; `muestra: "todas"` inspecciona el total.

@@ -1,9 +1,9 @@
 // ============================================================
 // Lógica de evaluación del lote (funciones puras, sin React)
 // ============================================================
-import { LIMITES_ENTRADA, RANGOS, TABLA_MUESTREO } from "@/lib/config/recepcion";
-import type { FilaJaba, FilaMuestra } from "./tipos";
-import { redondear, validarNumero } from "./validacion";
+import { DECIMALES, LIMITES_ENTRADA, RANGOS, TABLA_MUESTREO } from "@/lib/config/recepcion";
+import type { BorradorLote, FilaJaba, FilaMuestra } from "./tipos";
+import { redondear, validarNumero, type ReglaNumero } from "./validacion";
 
 // ─────────────────────────────────────────
 // Muestreo
@@ -209,6 +209,112 @@ export function porcentajeSobre(kg: number | null, contenidoKg: number): number 
 }
 
 export const FILA_JABA_VACIA: FilaJaba = { pesoLleno: "", tara: "", taraPendiente: false };
+
+// ─────────────────────────────────────────
+// Rondas de medición: °Brix (paso 6) y pH (paso 7)
+// ─────────────────────────────────────────
+export interface ConfigRondas {
+  regla: ReglaNumero;
+  rango: { min: number; max: number };
+  /** El promedio se redondea a estos decimales antes de compararlo con el rango (lo que se ve es lo que se evalúa). */
+  decimales: number;
+}
+
+export interface RondaEvaluada {
+  valores: (number | null)[];
+  errores: (string | null)[];
+  /** Todas las lecturas son válidas. */
+  completa: boolean;
+  promedio: number | null;
+  /** Lectura mayor − menor. */
+  diferencia: number | null;
+  /** null mientras la ronda no esté completa. */
+  conforme: boolean | null;
+}
+
+export interface ResultadoRondas {
+  rondas: RondaEvaluada[];
+  /** La 1.ª ronda quedó fuera de rango: se pide la 2.ª. */
+  segundaHabilitada: boolean;
+  /** Rondas que cuentan (1 o 2). */
+  rondasUsadas: number;
+  resultado: "pendiente" | "conforme" | "no_conforme";
+  /** Promedio de la última ronda que cuenta. */
+  promedioFinal: number | null;
+}
+
+export function evaluarRonda(lecturas: string[], cfg: ConfigRondas): RondaEvaluada {
+  const res = lecturas.map((t) => validarNumero(t, cfg.regla));
+  const valores = res.map((r) => r.valor);
+  const errores = res.map((r) => r.error);
+  const completa = valores.every((v) => v !== null);
+  if (!completa) return { valores, errores, completa, promedio: null, diferencia: null, conforme: null };
+  const nums = valores as number[];
+  const promedio = redondear(nums.reduce((a, b) => a + b, 0) / nums.length, cfg.decimales);
+  const diferencia = redondear(Math.max(...nums) - Math.min(...nums), cfg.decimales);
+  const conforme = promedio >= cfg.rango.min && promedio <= cfg.rango.max;
+  return { valores, errores, completa, promedio, diferencia, conforme };
+}
+
+export function evaluarRondas(rondas: string[][], cfg: ConfigRondas): ResultadoRondas {
+  const r1 = evaluarRonda(rondas[0] ?? [], cfg);
+  const r2 = evaluarRonda(rondas[1] ?? [], cfg);
+  if (r1.conforme === null) {
+    return { rondas: [r1], segundaHabilitada: false, rondasUsadas: 1, resultado: "pendiente", promedioFinal: null };
+  }
+  if (r1.conforme) {
+    return { rondas: [r1], segundaHabilitada: false, rondasUsadas: 1, resultado: "conforme", promedioFinal: r1.promedio };
+  }
+  return {
+    rondas: [r1, r2],
+    segundaHabilitada: true,
+    rondasUsadas: 2,
+    resultado: r2.conforme === null ? "pendiente" : r2.conforme ? "conforme" : "no_conforme",
+    promedioFinal: r2.promedio,
+  };
+}
+
+export const CONFIG_BRIX: ConfigRondas = {
+  regla: LIMITES_ENTRADA.brix,
+  rango: RANGOS.brix,
+  decimales: DECIMALES.brix,
+};
+
+export const CONFIG_PH: ConfigRondas = {
+  regla: LIMITES_ENTRADA.ph,
+  rango: RANGOS.ph,
+  decimales: DECIMALES.ph,
+};
+
+// ─────────────────────────────────────────
+// Acidez de laboratorio (paso 8)
+// ─────────────────────────────────────────
+export interface ResultadoAcidez {
+  pendiente: boolean;
+  valor: number | null;
+  error: string | null;
+  /** null si está pendiente o sin valor válido. */
+  conforme: boolean | null;
+  /** Fuera de rango: se pregunta si el laboratorio confirmó el valor. */
+  requiereConfirmacion: boolean;
+  confirmado: boolean | null;
+}
+
+export function evaluarAcidez(a: BorradorLote["acidez"]): ResultadoAcidez {
+  if (a.pendiente) {
+    return { pendiente: true, valor: null, error: null, conforme: null, requiereConfirmacion: false, confirmado: null };
+  }
+  const v = validarNumero(a.valor, LIMITES_ENTRADA.acidezGL);
+  const conforme = v.valor === null ? null : v.valor >= RANGOS.acidez.min && v.valor <= RANGOS.acidez.max;
+  return {
+    pendiente: false,
+    valor: v.valor,
+    error: v.error,
+    conforme,
+    requiereConfirmacion: conforme === false,
+    confirmado: conforme === false ? a.confirmado : null,
+  };
+}
 
 /** "3, 5, 8, 12, 20 y 4 más" */
 export function listaCorta(numeros: number[], max = 5): string {

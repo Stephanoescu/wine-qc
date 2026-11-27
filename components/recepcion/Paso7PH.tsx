@@ -1,0 +1,80 @@
+"use client";
+
+import React from "react";
+import { FlaskConical, ShieldCheck } from "lucide-react";
+import { DECIMALES, RANGOS } from "@/lib/config/recepcion";
+import {
+  AVISO_PH_RONDA1,
+  AVISO_PH_RONDA2,
+  CHECK_ELECTRODO,
+  CHECK_PH,
+  ETIQUETAS_PH,
+} from "@/lib/config/recepcion-textos";
+import type { EstadoPaso7 } from "@/lib/recepcion/pasos";
+import type { BorradorLote } from "@/lib/recepcion/tipos";
+import { formatear } from "@/lib/recepcion/validacion";
+import { RondasMedicion } from "./RondasMedicion";
+import { Checklist, FormField, NumeroInput, SectionCard } from "./WizardUI";
+
+export function Paso7PH({
+  borrador,
+  estado,
+  onToggle,
+  onLectura,
+  onTemperaturaJugo,
+}: {
+  borrador: BorradorLote;
+  estado: EstadoPaso7;
+  onToggle: (id: string) => void;
+  onLectura: (ronda: number, indice: number, valor: string) => void;
+  onTemperaturaJugo: (valor: string) => void;
+}) {
+  return (
+    <div className="flex flex-col gap-6">
+      <SectionCard title="Medición de pH" subtitle="Marque cada ítem al completarlo" icon={FlaskConical}>
+        <Checklist items={CHECK_PH} checks={borrador.checks} onToggle={onToggle} />
+      </SectionCard>
+
+      <SectionCard
+        title="Lecturas del medidor de pH"
+        subtitle={`Rango de referencia: pH ${formatear(RANGOS.ph.min, 1)} a ${formatear(RANGOS.ph.max, 1)}`}
+        icon={FlaskConical}
+      >
+        <div className="flex flex-col gap-5">
+          <RondasMedicion
+            nombre="pH"
+            etiquetas={ETIQUETAS_PH}
+            rondas={borrador.ph.rondas}
+            resultado={estado.rondas}
+            onLectura={onLectura}
+            rango={RANGOS.ph}
+            decimales={DECIMALES.ph}
+            decimalesRango={1}
+            avisoRonda1={AVISO_PH_RONDA1}
+            avisoRonda2={AVISO_PH_RONDA2}
+            mostrarDiferencia
+          />
+          <div className="sm:max-w-xs">
+            <FormField
+              label="Temperatura del jugo (°C)"
+              error={estado.errorTemperaturaJugo}
+              ayuda="Opcional: anótela si el medidor la muestra"
+            >
+              <NumeroInput
+                unidad="°C"
+                placeholder="—"
+                value={borrador.ph.temperaturaJugo}
+                onChange={onTemperaturaJugo}
+                error={estado.errorTemperaturaJugo}
+              />
+            </FormField>
+          </div>
+        </div>
+      </SectionCard>
+
+      <SectionCard title="Cuidado del electrodo" subtitle="Al terminar las mediciones" icon={ShieldCheck}>
+        <Checklist items={CHECK_ELECTRODO} checks={borrador.checks} onToggle={onToggle} />
+      </SectionCard>
+    </div>
+  );
+}

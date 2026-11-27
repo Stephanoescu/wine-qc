@@ -4,7 +4,12 @@
 // ============================================================
 import { LIMITES_ENTRADA } from "@/lib/config/recepcion";
 import {
+  CHECK_ACIDEZ,
+  CHECK_BRIX,
   CHECK_CARGA,
+  CHECK_ELECTRODO,
+  CHECK_PH,
+  ID_CHECK_ACIDEZ_RESULTADO,
   CHECK_INSTRUMENTOS,
   CHECK_MUESTRA_BAYAS,
   CHECK_PESADO,
@@ -14,13 +19,19 @@ import {
   type ItemChecklist,
 } from "@/lib/config/recepcion-textos";
 import {
+  CONFIG_BRIX,
+  CONFIG_PH,
   contenidoInspeccionado,
+  evaluarAcidez,
+  evaluarRondas,
   listaCorta,
   porcentajeSobre,
   resumenPesado,
   tamanoMuestra,
   temperaturaConforme,
   type ContenidoInspeccionado,
+  type ResultadoAcidez,
+  type ResultadoRondas,
   type ResumenPesado,
 } from "./evaluacion";
 import type { BorradorLote, ClaveParametroVisual, IdentificacionBorrador } from "./tipos";
@@ -291,4 +302,78 @@ export function estadoPaso5(b: BorradorLote): EstadoPaso5 {
     uvaDaniadaPct: porcentajeSobre(ud.valor, contenido.kg),
     errores,
   };
+}
+
+// ── Pasos 6 y 7: rondas de medición ───────────────────────
+function faltantesRondas(r: ResultadoRondas, nombre: string): string[] {
+  const f: string[] = [];
+  const conError = r.rondas.some((x) => x.errores.some(Boolean));
+  if (conError) f.push(`Corrija las lecturas de ${nombre} marcadas en rojo`);
+  else if (r.resultado === "pendiente") {
+    f.push(r.segundaHabilitada ? `Registre las lecturas de la 2.ª ronda de ${nombre}` : `Registre las lecturas de ${nombre}`);
+  }
+  return f;
+}
+
+export interface EstadoPaso6 extends EstadoPaso {
+  rondas: ResultadoRondas;
+}
+
+export function estadoPaso6(b: BorradorLote): EstadoPaso6 {
+  const rondas = evaluarRondas(b.brix.rondas, CONFIG_BRIX);
+  const faltantes: string[] = [];
+  const f = faltaChecklist("Muestreo de jugo y °Brix", CHECK_BRIX, b.checks);
+  if (f) faltantes.push(f);
+  faltantes.push(...faltantesRondas(rondas, "°Brix"));
+  return { valido: faltantes.length === 0, faltantes, rondas };
+}
+
+export interface EstadoPaso7 extends EstadoPaso {
+  rondas: ResultadoRondas;
+  temperaturaJugo: number | null;
+  errorTemperaturaJugo: string | null;
+}
+
+export function estadoPaso7(b: BorradorLote): EstadoPaso7 {
+  const rondas = evaluarRondas(b.ph.rondas, CONFIG_PH);
+  const faltantes: string[] = [];
+  const f = faltaChecklist("Medición de pH", CHECK_PH, b.checks);
+  if (f) faltantes.push(f);
+  faltantes.push(...faltantesRondas(rondas, "pH"));
+  const t = validarNumero(b.ph.temperaturaJugo, LIMITES_ENTRADA.temperaturaC);
+  if (t.error) faltantes.push("Corrija la temperatura del jugo (o déjela vacía)");
+  const fe = faltaChecklist("Cuidado del electrodo", CHECK_ELECTRODO, b.checks);
+  if (fe) faltantes.push(fe);
+  return { valido: faltantes.length === 0, faltantes, rondas, temperaturaJugo: t.valor, errorTemperaturaJugo: t.error };
+}
+
+// ── Paso 8: acidez de laboratorio ─────────────────────────
+export interface EstadoPaso8 extends EstadoPaso {
+  acidez: ResultadoAcidez;
+  /** Ítems de la lista que aplican (sin resultado, solo la entrega al laboratorio). */
+  itemsAplicables: ItemChecklist[];
+  errores: { metodo?: string; puntoFinal?: string; valor?: string };
+}
+
+export function estadoPaso8(b: BorradorLote): EstadoPaso8 {
+  const a = b.acidez;
+  const acidez = evaluarAcidez(a);
+  const itemsAplicables = a.pendiente ? CHECK_ACIDEZ.filter((i) => i.id !== ID_CHECK_ACIDEZ_RESULTADO) : CHECK_ACIDEZ;
+  const faltantes: string[] = [];
+  const errores: EstadoPaso8["errores"] = {};
+  const f = faltaChecklist("Acidez de laboratorio", itemsAplicables, b.checks);
+  if (f) faltantes.push(f);
+
+  if (!a.pendiente) {
+    const vacios: string[] = [];
+    if (a.metodo.trim() === "") vacios.push("Método");
+    if (a.puntoFinal.trim() === "") vacios.push("Punto final");
+    if (a.valor.trim() === "") vacios.push("Valor");
+    if (vacios.length) faltantes.push(`Complete: ${vacios.join(", ")} (o marque la acidez como pendiente)`);
+    if (acidez.error) {
+      errores.valor = acidez.error;
+      faltantes.push("Corrija el valor de acidez");
+    }
+  }
+  return { valido: faltantes.length === 0, faltantes, acidez, itemsAplicables, errores };
 }

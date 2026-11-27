@@ -95,13 +95,15 @@ export interface LoteV2 {
     materiaExtranaPct: number | null;
     uvaDaniadaPct: number | null;
   };
-  brix: { rondas: Ronda[] };
-  ph: { rondas: Ronda[]; temperaturaJugo?: number };
+  /** 1 o 2 rondas (la 2.ª solo si la 1.ª quedó fuera de rango). */
+  brix: { rondas: Ronda[]; conforme: boolean };
+  ph: { rondas: Ronda[]; conforme: boolean; temperaturaJugo?: number };
   acidez: {
     metodo: string;
     puntoFinal: string;
     valor: number | null;
     pendiente: boolean;
+    /** Solo si el valor está fuera de rango: el laboratorio confirmó el resultado. */
     confirmadoPorLab?: boolean;
     conforme: boolean | null;
   };
@@ -211,5 +213,19 @@ export interface BorradorLote {
     decisionEnologia: string;
     materiaExtranaKg: string;
     uvaDaniadaKg: string;
+  };
+  /** Paso 6: rondas[0] = B1–B3, rondas[1] = B1'–B3' (solo cuenta si la 1.ª queda fuera de rango). */
+  brix: { rondas: string[][] };
+  /** Paso 7: rondas[0] = pH1–pH2, rondas[1] = pH1'–pH2'. */
+  ph: { rondas: string[][]; temperaturaJugo: string };
+  /** Paso 8: resultado del laboratorio. */
+  acidez: {
+    /** El resultado aún no llega: se guarda el lote con la acidez pendiente. */
+    pendiente: boolean;
+    metodo: string;
+    puntoFinal: string;
+    valor: string;
+    /** Respuesta a "¿El laboratorio confirmó el valor?" (solo fuera de rango). */
+    confirmado: boolean | null;
   };
 }

@@ -234,6 +234,16 @@ export const CHECK_BRIX: ItemChecklist[] = [
   },
 ];
 
+/** Etiquetas de los campos de cada ronda. */
+export const ETIQUETAS_BRIX = [
+  ["B1", "B2", "B3"],
+  ["B1'", "B2'", "B3'"],
+] as const;
+export const ETIQUETAS_PH = [
+  ["pH1", "pH2"],
+  ["pH1'", "pH2'"],
+] as const;
+
 export const AVISO_BRIX_RONDA1 =
   "Laboratorio: revise el control del refractómetro y repita las tres lecturas con jugo nuevo.";
 export const AVISO_BRIX_RONDA2 = "No conforme — Retenga el lote para Enología";
@@ -298,6 +308,9 @@ export const CHECK_ACIDEZ: ItemChecklist[] = [
 ];
 
 export const AVISO_ACIDEZ_FUERA = "Solicite al laboratorio que confirme el resultado.";
+export const PREGUNTA_ACIDEZ_CONFIRMADA = "¿El laboratorio confirmó el valor?";
+/** Ítem de la lista del paso 8 que solo aplica cuando ya llegó el resultado. */
+export const ID_CHECK_ACIDEZ_RESULTADO = "p8.2";
 
 // ── Paso 9 ────────────────────────────────────────────────
 export const CHECK_FINAL: ItemChecklist[] = [

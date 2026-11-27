@@ -2,7 +2,7 @@
 // Borrador del asistente: creación y autosalvado en localStorage
 // (permite recuperar el registro si se recarga la página en el celular)
 // ============================================================
-import { VARIEDAD_POR_DEFECTO } from "@/lib/config/recepcion";
+import { LECTURAS_POR_RONDA, VARIEDAD_POR_DEFECTO } from "@/lib/config/recepcion";
 import { PARAMETROS_VISUALES } from "@/lib/config/recepcion-textos";
 import {
   BORRADOR_ESQUEMA,
@@ -47,6 +47,17 @@ function parametrosVacios(): Record<ClaveParametroVisual, ParamVisualBorrador> {
   >;
 }
 
+function rondasVacias(lecturas: number): string[][] {
+  return [0, 1].map(() => Array.from({ length: lecturas }, () => ""));
+}
+
+/** Ajusta las rondas guardadas a 2 rondas × `lecturas` campos. */
+function normalizarRondas(guardadas: unknown, lecturas: number): string[][] {
+  const base = rondasVacias(lecturas);
+  if (!Array.isArray(guardadas)) return base;
+  return base.map((ronda, r) => ronda.map((_, i) => (typeof guardadas[r]?.[i] === "string" ? guardadas[r][i] : "")));
+}
+
 /** Ids de todas las fotos referenciadas por el borrador. */
 export function fotosDelBorrador(b: BorradorLote): string[] {
   return Object.values(b.cajas.parametros).flatMap((p) => p.fotoIds);
@@ -71,6 +82,9 @@ export function crearBorradorVacio(): BorradorLote {
     pesado: { usoFuncionTara: false, jabas: [] },
     muestreo: { filas: [], pesoBolsaG: "" },
     cajas: { parametros: parametrosVacios(), decisionEnologia: "", materiaExtranaKg: "", uvaDaniadaKg: "" },
+    brix: { rondas: rondasVacias(LECTURAS_POR_RONDA.brix) },
+    ph: { rondas: rondasVacias(LECTURAS_POR_RONDA.ph), temperaturaJugo: "" },
+    acidez: { pendiente: false, metodo: "", puntoFinal: "", valor: "", confirmado: null },
   };
 }
 
@@ -101,6 +115,13 @@ export function cargarBorrador(): BorradorLote | null {
           ]),
         ) as BorradorLote["cajas"]["parametros"],
       },
+      brix: { rondas: normalizarRondas(guardado.brix?.rondas, LECTURAS_POR_RONDA.brix) },
+      ph: {
+        ...vacio.ph,
+        ...guardado.ph,
+        rondas: normalizarRondas(guardado.ph?.rondas, LECTURAS_POR_RONDA.ph),
+      },
+      acidez: { ...vacio.acidez, ...guardado.acidez },
     };
   } catch {
     return null;

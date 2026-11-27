@@ -20,6 +20,9 @@ import {
   estadoPaso3,
   estadoPaso4,
   estadoPaso5,
+  estadoPaso6,
+  estadoPaso7,
+  estadoPaso8,
   numJabasValido,
   type EstadoPaso,
 } from "@/lib/recepcion/pasos";
@@ -37,6 +40,9 @@ import { Paso2Instrumentos } from "@/components/recepcion/Paso2Instrumentos";
 import { Paso3CargaPesado } from "@/components/recepcion/Paso3CargaPesado";
 import { Paso4MuestreoTemperatura } from "@/components/recepcion/Paso4MuestreoTemperatura";
 import { Paso5InspeccionCajas } from "@/components/recepcion/Paso5InspeccionCajas";
+import { Paso6Brix } from "@/components/recepcion/Paso6Brix";
+import { Paso7PH } from "@/components/recepcion/Paso7PH";
+import { Paso8Acidez } from "@/components/recepcion/Paso8Acidez";
 
 const TOTAL_PASOS = PASOS_ASISTENTE.length;
 
@@ -153,6 +159,24 @@ function AsistenteRecepcion() {
     actualizarParametro(clave, (p) => ({ ...p, fotoIds: p.fotoIds.filter((f) => f !== id) }));
   }
 
+  // ── Pasos 6 y 7 ──
+  const actualizarLectura = useCallback((medida: "brix" | "ph", ronda: number, indice: number, valor: string) => {
+    setB((prev) => {
+      const rondas = prev[medida].rondas.map((r, ri) => (ri === ronda ? r.map((v, i) => (i === indice ? valor : v)) : r));
+      return { ...prev, [medida]: { ...prev[medida], rondas } };
+    });
+  }, []);
+
+  // ── Paso 8 ──
+  const actualizarAcidez = useCallback((cambios: Partial<BorradorLote["acidez"]>) => {
+    setB((prev) => {
+      const acidez = { ...prev.acidez, ...cambios };
+      // Un valor nuevo necesita su propia confirmación del laboratorio.
+      if (cambios.valor !== undefined && cambios.valor !== prev.acidez.valor) acidez.confirmado = null;
+      return { ...prev, acidez };
+    });
+  }, []);
+
   function descartar() {
     if (!confirm("¿Descartar el registro en curso y empezar uno nuevo? Se perderán los datos ingresados.")) return;
     borrarFotos(fotosDelBorrador(b)).catch(() => {});
@@ -228,6 +252,39 @@ function AsistenteRecepcion() {
           onCajas={(cambios) => setB((prev) => ({ ...prev, cajas: { ...prev.cajas, ...cambios } }))}
         />
       );
+      break;
+    }
+    case 6: {
+      const e = estadoPaso6(b);
+      estado = e;
+      contenido = (
+        <Paso6Brix
+          borrador={b}
+          estado={e}
+          onToggle={alternarCheck}
+          onLectura={(r, i, v) => actualizarLectura("brix", r, i, v)}
+        />
+      );
+      break;
+    }
+    case 7: {
+      const e = estadoPaso7(b);
+      estado = e;
+      contenido = (
+        <Paso7PH
+          borrador={b}
+          estado={e}
+          onToggle={alternarCheck}
+          onLectura={(r, i, v) => actualizarLectura("ph", r, i, v)}
+          onTemperaturaJugo={(temperaturaJugo) => setB((prev) => ({ ...prev, ph: { ...prev.ph, temperaturaJugo } }))}
+        />
+      );
+      break;
+    }
+    case 8: {
+      const e = estadoPaso8(b);
+      estado = e;
+      contenido = <Paso8Acidez borrador={b} estado={e} onToggle={alternarCheck} onAcidez={actualizarAcidez} />;
       break;
     }
     default:
