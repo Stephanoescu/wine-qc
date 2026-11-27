@@ -1,0 +1,188 @@
+// ============================================================
+// Modelo de datos del lote (formato v2) y del borrador del asistente
+// ============================================================
+
+export type EstadoLote = "LIBERADO" | "RETENIDO" | "RECHAZADO";
+
+export type ClaveParametroVisual =
+  | "podredumbre"
+  | "bayasDaniadas"
+  | "deshidratacion"
+  | "bayasVerdes"
+  | "materiaExtrana"
+  | "olorVinagre";
+
+// ─────────────────────────────────────────
+// Lote guardado (formato v2)
+// ─────────────────────────────────────────
+export interface JabaPesada {
+  numero: number;
+  /** Lectura de la balanza. Si se usó la función TARA, ya es el neto. */
+  pesoLleno: number;
+  tara: number | null;
+  neto: number | null;
+  taraPendiente: boolean;
+}
+
+export interface ObsCarga {
+  jaba: number;
+  descripcion: string;
+}
+
+export interface LecturaTemp {
+  jaba: number;
+  temperatura: number;
+  conforme: boolean;
+}
+
+export interface ParamVisual {
+  clave: ClaveParametroVisual;
+  observado: boolean;
+  fotoIds: string[];
+  comentario?: string;
+}
+
+export interface Ronda {
+  lecturas: number[];
+  promedio: number;
+  conforme: boolean;
+  /** Solo pH: lectura mayor − menor. */
+  diferencia?: number;
+}
+
+export interface Motivo {
+  paso: number;
+  parametro: string;
+  detalle: string;
+  tipo: "observacion" | "fuera_rango" | "pendiente";
+}
+
+export interface Firma {
+  nombre: string;
+  destino: string;
+  motivo?: string;
+  fecha: string;
+}
+
+export interface EntradaHistorial {
+  estado: EstadoLote;
+  fecha: string;
+  por: string;
+  nota?: string;
+}
+
+export interface LoteV2 {
+  version: 2;
+  id: string;
+  codigoLote: string;
+  proveedor: string;
+  origen: string;
+  variedad: string;
+  fecha: string;
+  hora: string;
+  numJabas: number;
+  carga: { hayObservaciones: boolean; observaciones: ObsCarga[] };
+  pesado: { usoFuncionTara: boolean; jabas: JabaPesada[]; pesoNetoTotal: number; parcial: boolean };
+  muestreo: { jabasSeleccionadas: number[]; temperaturas: LecturaTemp[]; pesoBolsaBayasG: number };
+  cajas: {
+    parametros: ParamVisual[];
+    decisionEnologia?: string;
+    materiaExtranaKg: number;
+    uvaDaniadaKg: number;
+    contenidoInspeccionadoKg: number;
+    materiaExtranaPct: number;
+    uvaDaniadaPct: number;
+  };
+  brix: { rondas: Ronda[] };
+  ph: { rondas: Ronda[]; temperaturaJugo?: number };
+  acidez: {
+    metodo: string;
+    puntoFinal: string;
+    valor: number | null;
+    pendiente: boolean;
+    confirmadoPorLab?: boolean;
+    conforme: boolean | null;
+  };
+  estado: EstadoLote;
+  estadoSugerido: EstadoLote;
+  motivos: Motivo[];
+  /** LIBERADO: "Autorizado por" + destino. */
+  disposicion?: Firma;
+  /** RECHAZADO, o liberación con observaciones (motivo obligatorio). */
+  enologia?: Firma;
+  liberadoConObservaciones?: boolean;
+  historial: EntradaHistorial[];
+  // Copias para la tabla de /reportes
+  pesoNeto: number;
+  brixPromedio: number | null;
+  phPromedio: number | null;
+  acidezValor: number | null;
+  savedAt: string;
+  updatedAt?: string;
+}
+
+// ─────────────────────────────────────────
+// Lote en formato anterior (A/B/C)
+// ─────────────────────────────────────────
+export interface LoteLegacy {
+  id: string;
+  codigoLote: string;
+  proveedor: string;
+  procedencia: string;
+  variedad: string;
+  fecha: string;
+  hora: string;
+  peso: number;
+  brixPromedio: number;
+  phPromedio: number;
+  categoria: "A" | "B" | "C" | null;
+  observaciones: string[];
+  inspeccionVisual?: Record<string, number>;
+  savedAt?: string;
+}
+
+export type LoteAlmacenado = LoteV2 | LoteLegacy;
+
+export function esLegacy(l: LoteAlmacenado): l is LoteLegacy {
+  return !("version" in l);
+}
+
+// ─────────────────────────────────────────
+// Borrador del asistente (valores tal como se escriben)
+// ─────────────────────────────────────────
+/** Cambiar este número descarta borradores guardados con un esquema incompatible. */
+export const BORRADOR_ESQUEMA = 1;
+
+export interface FilaObsCarga {
+  /** Id estable para la lista en React. */
+  id: string;
+  jaba: string;
+  descripcion: string;
+}
+
+export interface FilaJaba {
+  pesoLleno: string;
+  tara: string;
+  taraPendiente: boolean;
+}
+
+export interface IdentificacionBorrador {
+  proveedor: string;
+  origen: string;
+  fecha: string;
+  hora: string;
+  variedad: string;
+  numJabas: string;
+  codigoLote: string;
+}
+
+export interface BorradorLote {
+  esquema: number;
+  paso: number;
+  /** Casillas marcadas, por id de ítem (ver recepcion-textos.ts). */
+  checks: Record<string, boolean>;
+  identificacion: IdentificacionBorrador;
+  carga: { hayObservaciones: boolean | null; observaciones: FilaObsCarga[] };
+  /** `jabas[i]` corresponde a la jaba N° i+1. Puede tener más filas que numJabas. */
+  pesado: { usoFuncionTara: boolean; jabas: FilaJaba[] };
+}
